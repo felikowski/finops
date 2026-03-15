@@ -14,6 +14,12 @@ finops/
 
 Run all commands from the respective subfolder.
 
+**Root:**
+```bash
+npm run db          # Start PostgreSQL via Docker (required before backend)
+npm start           # Start backend + frontend concurrently
+```
+
 **Backend (`cd backend`):**
 ```bash
 npm run start:dev   # Run in development mode (ts-node, no compile step)
@@ -40,7 +46,7 @@ Minimal NestJS app with TypeORM (SQLite). The app listens on port 3000.
 - `backend/src/app.module.ts` — root module; configures TypeORM with SQLite (`data/finops.sqlite`, `synchronize: true`, `autoLoadEntities: true`)
 - `backend/src/app.controller.ts` / `backend/src/app.service.ts` — single `GET /` endpoint returning a greeting
 
-**Database:** SQLite file at `backend/data/finops.sqlite`. Schema is auto-synced from entities at startup (`synchronize: true`). New entities must be decorated with `@Entity()` and registered in a module using `TypeOrmModule.forFeature([...])` — they are picked up automatically via `autoLoadEntities`.
+**Database:** PostgreSQL. Connection is configured via environment variables (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`) with localhost defaults for development. See `backend/.env.example`. Run locally with `npm run db` from the root (starts Docker container). Schema is auto-synced from entities at startup (`synchronize: true`). New entities must be decorated with `@Entity()` and registered in a module using `TypeOrmModule.forFeature([...])` — they are picked up automatically via `autoLoadEntities`.
 
 **Adding features:** Follow NestJS module pattern — create a dedicated module (e.g., `backend/src/costs/costs.module.ts`) with its own controller, service, and entity, then import the module in `AppModule`.
 
