@@ -48,65 +48,88 @@ export class BillingService {
     return { rowsInserted: totalRows };
   }
 
+  private val(record: Record<string, any>, ...keys: string[]): any {
+    for (const key of keys) {
+      const v = record[key];
+      if (v !== undefined && v !== null && v !== 'NULL') return v;
+    }
+    return null;
+  }
+
+  private parseDate(record: Record<string, any>, ...keys: string[]): Date | undefined {
+    const v = this.val(record, ...keys);
+    return v ? new Date(v) : undefined;
+  }
+
   private mapRecord(record: Record<string, any>): Partial<BillingLineItem> {
     return {
-      billedCost: record['BilledCost'],
-      billingAccountId: record['BillingAccountId'],
-      billingAccountName: record['BillingAccountName'],
-      billingCurrency: record['BillingCurrency'],
-      billingPeriodEnd: record['BillingPeriodEnd'] ? new Date(record['BillingPeriodEnd']) : undefined,
-      billingPeriodStart: record['BillingPeriodStart'] ? new Date(record['BillingPeriodStart']) : undefined,
-      chargeCategory: record['ChargeCategory'],
-      chargeClass: record['ChargeClass'] ?? null,
-      chargeDescription: record['ChargeDescription'],
-      chargePeriodEnd: record['ChargePeriodEnd'] ? new Date(record['ChargePeriodEnd']) : undefined,
-      chargePeriodStart: record['ChargePeriodStart'] ? new Date(record['ChargePeriodStart']) : undefined,
-      provider: record['Provider'],
-      availabilityZone: record['AvailabilityZone'] ?? null,
-      billingAccountType: record['BillingAccountType'] ?? null,
-      capacityReservationId: record['CapacityReservationId'] ?? null,
-      capacityReservationStatus: record['CapacityReservationStatus'] ?? null,
-      chargeFrequency: record['ChargeFrequency'] ?? null,
-      commitmentDiscountCategory: record['CommitmentDiscountCategory'] ?? null,
-      commitmentDiscountId: record['CommitmentDiscountId'] ?? null,
-      commitmentDiscountName: record['CommitmentDiscountName'] ?? null,
-      commitmentDiscountQuantity: record['CommitmentDiscountQuantity'] ?? null,
-      commitmentDiscountStatus: record['CommitmentDiscountStatus'] ?? null,
-      commitmentDiscountType: record['CommitmentDiscountType'] ?? null,
-      commitmentDiscountUnit: record['CommitmentDiscountUnit'] ?? null,
-      consumedQuantity: record['ConsumedQuantity'] ?? null,
-      consumedUnit: record['ConsumedUnit'] ?? null,
-      contractedCost: record['ContractedCost'] ?? null,
-      contractedUnitPrice: record['ContractedUnitPrice'] ?? null,
-      effectiveCost: record['EffectiveCost'] ?? null,
-      invoiceId: record['InvoiceId'] ?? null,
-      invoiceIssuer: record['InvoiceIssuer'] ?? null,
-      listCost: record['ListCost'] ?? null,
-      listUnitPrice: record['ListUnitPrice'] ?? null,
-      pricingCategory: record['PricingCategory'] ?? null,
-      pricingCurrency: record['PricingCurrency'] ?? null,
-      pricingCurrencyContractedUnitPrice: record['PricingCurrencyContractedUnitPrice'] ?? null,
-      pricingCurrencyEffectiveCost: record['PricingCurrencyEffectiveCost'] ?? null,
-      pricingCurrencyListUnitPrice: record['PricingCurrencyListUnitPrice'] ?? null,
-      pricingQuantity: record['PricingQuantity'] ?? null,
-      pricingUnit: record['PricingUnit'] ?? null,
-      publisher: record['Publisher'] ?? null,
-      regionId: record['RegionId'] ?? null,
-      regionName: record['RegionName'] ?? null,
-      resourceId: record['ResourceId'] ?? null,
-      resourceName: record['ResourceName'] ?? null,
-      resourceType: record['ResourceType'] ?? null,
-      serviceCategory: record['ServiceCategory'] ?? null,
-      serviceName: record['ServiceName'] ?? null,
-      serviceSubcategory: record['ServiceSubcategory'] ?? null,
-      skuId: record['SkuId'] ?? null,
-      skuMeter: record['SkuMeter'] ?? null,
-      skuPriceDetails: record['SkuPriceDetails'] ?? null,
-      skuPriceId: record['SkuPriceId'] ?? null,
-      subAccountId: record['SubAccountId'] ?? null,
-      subAccountName: record['SubAccountName'] ?? null,
-      subAccountType: record['SubAccountType'] ?? null,
-      tags: record['Tags'] ? JSON.parse(record['Tags']) : null,
+      // Mandatory — support both FOCUS 1.0 and 1.2 column names
+      billedCost: this.val(record, 'BilledCost'),
+      billingAccountId: this.val(record, 'BillingAccountId'),
+      billingAccountName: this.val(record, 'BillingAccountName'),
+      billingCurrency: this.val(record, 'BillingCurrency'),
+      billingPeriodEnd: this.parseDate(record, 'BillingPeriodEnd'),
+      billingPeriodStart: this.parseDate(record, 'BillingPeriodStart'),
+      chargeCategory: this.val(record, 'ChargeCategory'),
+      chargeClass: this.val(record, 'ChargeClass'),
+      chargeDescription: this.val(record, 'ChargeDescription'),
+      chargePeriodEnd: this.parseDate(record, 'ChargePeriodEnd'),
+      chargePeriodStart: this.parseDate(record, 'ChargePeriodStart'),
+      // FOCUS 1.0 used ProviderName, 1.2 uses Provider
+      provider: this.val(record, 'Provider', 'ProviderName'),
+
+      // Conditional
+      availabilityZone: this.val(record, 'AvailabilityZone'),
+      billingAccountType: this.val(record, 'BillingAccountType'),
+      capacityReservationId: this.val(record, 'CapacityReservationId'),
+      capacityReservationStatus: this.val(record, 'CapacityReservationStatus'),
+      chargeFrequency: this.val(record, 'ChargeFrequency'),
+      commitmentDiscountCategory: this.val(record, 'CommitmentDiscountCategory'),
+      commitmentDiscountId: this.val(record, 'CommitmentDiscountId'),
+      commitmentDiscountName: this.val(record, 'CommitmentDiscountName'),
+      commitmentDiscountQuantity: this.val(record, 'CommitmentDiscountQuantity'),
+      commitmentDiscountStatus: this.val(record, 'CommitmentDiscountStatus'),
+      commitmentDiscountType: this.val(record, 'CommitmentDiscountType'),
+      commitmentDiscountUnit: this.val(record, 'CommitmentDiscountUnit'),
+      consumedQuantity: this.val(record, 'ConsumedQuantity'),
+      consumedUnit: this.val(record, 'ConsumedUnit'),
+      contractedCost: this.val(record, 'ContractedCost'),
+      contractedUnitPrice: this.val(record, 'ContractedUnitPrice'),
+      effectiveCost: this.val(record, 'EffectiveCost'),
+      invoiceId: this.val(record, 'InvoiceId'),
+      // FOCUS 1.0 used InvoiceIssuerName, 1.2 uses InvoiceIssuer
+      invoiceIssuer: this.val(record, 'InvoiceIssuer', 'InvoiceIssuerName'),
+      listCost: this.val(record, 'ListCost'),
+      listUnitPrice: this.val(record, 'ListUnitPrice'),
+      pricingCategory: this.val(record, 'PricingCategory'),
+      pricingCurrency: this.val(record, 'PricingCurrency'),
+      pricingCurrencyContractedUnitPrice: this.val(record, 'PricingCurrencyContractedUnitPrice'),
+      pricingCurrencyEffectiveCost: this.val(record, 'PricingCurrencyEffectiveCost'),
+      pricingCurrencyListUnitPrice: this.val(record, 'PricingCurrencyListUnitPrice'),
+      pricingQuantity: this.val(record, 'PricingQuantity'),
+      pricingUnit: this.val(record, 'PricingUnit'),
+      // FOCUS 1.0 used PublisherName, 1.2 uses Publisher
+      publisher: this.val(record, 'Publisher', 'PublisherName'),
+      regionId: this.val(record, 'RegionId'),
+      regionName: this.val(record, 'RegionName'),
+      resourceId: this.val(record, 'ResourceId'),
+      resourceName: this.val(record, 'ResourceName'),
+      resourceType: this.val(record, 'ResourceType'),
+      serviceCategory: this.val(record, 'ServiceCategory'),
+      serviceName: this.val(record, 'ServiceName'),
+      serviceSubcategory: this.val(record, 'ServiceSubcategory'),
+      skuId: this.val(record, 'SkuId'),
+      skuMeter: this.val(record, 'SkuMeter'),
+      skuPriceDetails: this.val(record, 'SkuPriceDetails'),
+      skuPriceId: this.val(record, 'SkuPriceId'),
+      subAccountId: this.val(record, 'SubAccountId'),
+      subAccountName: this.val(record, 'SubAccountName'),
+      subAccountType: this.val(record, 'SubAccountType'),
+      tags: (() => {
+        const t = this.val(record, 'Tags');
+        if (!t) return null;
+        try { return JSON.parse(t); } catch { return null; }
+      })(),
     };
   }
 }
