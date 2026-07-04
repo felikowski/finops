@@ -1,0 +1,13 @@
+packages:
+  - backend
+  - frontend
+
+# Dependencies permitted to run install/build scripts. pnpm blocks these by
+# default (supply-chain safety); all listed here are well-known build/native
+# packages our build tooling requires.
+allowBuilds:
+  '@nestjs/core': true
+  '@parcel/watcher': true
+  esbuild: true
+  lmdb: true
+  msgpackr-extract: true
