@@ -1,3 +1,8 @@
 node_modules/
 dist/
+.idea/
+
+# Environment files — never commit secrets (keep .env.example tracked)
 .env
+.env.*
+!.env.example
