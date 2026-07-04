@@ -1,5 +1,5 @@
 {
-  "name": "finops",
+  "name": "backend",
   "version": "0.1.0",
   "description": "Simple NestJS app",
   "main": "dist/main.js",
