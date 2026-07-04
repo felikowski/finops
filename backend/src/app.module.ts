@@ -17,6 +17,7 @@ import { BillingModule } from './billing/billing.module';
         username: config.get('DB_USER', 'postgres'),
         password: config.get('DB_PASSWORD', 'postgres'),
         database: config.get('DB_NAME', 'finops'),
+        schema: config.get('DB_SCHEMA', 'finops'),
         autoLoadEntities: true,
         synchronize: true
       })
