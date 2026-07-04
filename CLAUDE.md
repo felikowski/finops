@@ -12,25 +12,29 @@ finops/
 
 ## Commands
 
-Run all commands from the respective subfolder.
+This is a **pnpm workspace** (packages: `backend`, `frontend`). pnpm is provided via
+corepack and pinned in the root `packageManager` field — run `corepack enable` once.
+Run scripts from the repo root with `pnpm --filter <pkg>`, or `cd` into a package and
+run `pnpm <script>`.
 
 **Root:**
 ```bash
-npm run db          # Start PostgreSQL via Docker (required before backend)
-npm start           # Start backend + frontend concurrently
+pnpm install        # Install all workspace dependencies (backend + frontend)
+pnpm run db         # Start PostgreSQL via Docker (required before backend)
+pnpm start          # Start backend + frontend concurrently
 ```
 
-**Backend (`cd backend`):**
+**Backend:**
 ```bash
-npm run start:dev   # Run in development mode (ts-node, no compile step)
-npm run build       # Compile TypeScript → dist/
-npm run start       # Run compiled production build
+pnpm --filter backend start:dev   # Run in development mode (ts-node, no compile step)
+pnpm --filter backend build       # Compile TypeScript → dist/
+pnpm --filter backend start       # Run compiled production build
 ```
 
-**Frontend (`cd frontend`):**
+**Frontend:**
 ```bash
-npm start           # Start Angular dev server
-npm run build       # Build for production
+pnpm --filter frontend start      # Start Angular dev server
+pnpm --filter frontend build      # Build for production
 ```
 
 No test or lint commands are currently configured for the backend.
