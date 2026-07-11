@@ -1,0 +1,81 @@
+<section class="billing-accounts">
+  <div class="header-row">
+    <h2>Billing accounts</h2>
+    <button type="button" class="secondary" (click)="load()">Refresh</button>
+  </div>
+
+  @switch (loadState()) {
+    @case ('loading') {
+      <p class="state-message">Loading billing accounts…</p>
+    }
+    @case ('error') {
+      <div class="state-message error">
+        <p>Failed to load billing accounts.</p>
+        <button type="button" (click)="load()">Retry</button>
+      </div>
+    }
+    @case ('loaded') {
+      @if (accounts().length === 0) {
+        <p class="state-message">No billing accounts registered yet.</p>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Display name</th>
+                <th>Provider</th>
+                <th>Source</th>
+                <th>Enabled</th>
+                <th>Last pull</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (account of accounts(); track account.id) {
+                <tr>
+                  <td>{{ account.displayName }}</td>
+                  <td>{{ account.provider }}</td>
+                  <td>{{ account.sourceConfig.bucket }}/{{ account.sourceConfig.key }}</td>
+                  <td>
+                    <span class="badge" [class.badge-off]="!account.enabled">
+                      {{ account.enabled ? 'Enabled' : 'Disabled' }}
+                    </span>
+                  </td>
+                  <td>
+                    @if (account.lastIngestedAt) {
+                      {{ account.lastIngestedAt | date: 'medium' }} · {{ account.lastRowsInserted }} rows
+                    } @else {
+                      Never
+                    }
+                  </td>
+                  <td class="actions">
+                    <button
+                      type="button"
+                      [disabled]="!account.enabled || isPulling(account.id)"
+                      [title]="!account.enabled ? 'Account is disabled' : ''"
+                      (click)="pull(account)"
+                    >
+                      {{ isPulling(account.id) ? 'Pulling…' : 'Pull' }}
+                    </button>
+                    @switch (pullState(account.id).status) {
+                      @case ('success') {
+                        <span class="pull-result success">
+                          Inserted {{ $any(pullState(account.id)).rowsInserted }} rows
+                        </span>
+                      }
+                      @case ('error') {
+                        <span class="pull-result error">
+                          {{ $any(pullState(account.id)).message }}
+                        </span>
+                      }
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  }
+</section>

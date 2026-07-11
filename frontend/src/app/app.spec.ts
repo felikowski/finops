@@ -1,6 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
+import { provideRouter } from '@angular/router';
 import { App } from './app';
+import { routes } from './app.routes';
 import { DEFAULT_RUNTIME_CONFIG, RUNTIME_CONFIG } from './runtime-config';
 
 describe('App', () => {
@@ -9,6 +11,7 @@ describe('App', () => {
       imports: [App],
       providers: [
         provideHttpClient(),
+        provideRouter(routes),
         { provide: RUNTIME_CONFIG, useValue: DEFAULT_RUNTIME_CONFIG },
       ],
     }).compileComponents();
@@ -20,10 +23,10 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render the backend status', () => {
+  it('should render the header', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('p')?.textContent).toContain('Backend says:');
+    expect(compiled.querySelector('h1')?.textContent).toContain('FinOps');
   });
 });
