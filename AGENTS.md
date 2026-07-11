@@ -18,3 +18,4 @@
 - Follow Conventional Commits for every commit message and pull request title: `type(scope): description` or `type: description` when no scope is useful.
 - Use the semantic types established by the repository history, including `feat`, `fix`, `docs`, and `chore`.
 - Keep the type and optional scope lowercase and write a concise imperative description.
+- When a pull request addresses a GitHub issue, include a closing keyword referencing it in the PR description (e.g. `Closes #12`, `Fixes #12`), so the issue auto-closes on merge.
