@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { parse } from 'csv-parse';
 import { BillingLineItem } from './entities/billing-line-item.entity';
-import { S3Adapter } from './adapters/s3.adapter';
+import { S3Adapter, S3GetStreamParams } from './adapters/s3.adapter';
 
 const BATCH_SIZE = 1000;
 
@@ -17,10 +17,10 @@ export class BillingService {
     private readonly s3Adapter: S3Adapter,
   ) {}
 
-  async ingestFromS3(bucket: string, key: string): Promise<{ rowsInserted: number }> {
-    this.logger.log(`Starting ingestion from s3://${bucket}/${key}`);
+  async ingestFromS3(params: S3GetStreamParams): Promise<{ rowsInserted: number }> {
+    this.logger.log(`Starting ingestion from s3://${params.bucket}/${params.key}`);
 
-    const s3Stream = await this.s3Adapter.getStream(bucket, key);
+    const s3Stream = await this.s3Adapter.getStream(params);
     const parser = s3Stream.pipe(
       parse({ columns: true, cast: true, skip_empty_lines: true, trim: true }),
     );
