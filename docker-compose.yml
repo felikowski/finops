@@ -1,14 +1,21 @@
 services:
-  db:
-    image: postgres:16
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file:
+      - backend/.env
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: finops
+      SECRETS_SOURCE: infisical
+      PUBLIC_API_BASE_URL: /api
     ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-volumes:
-  pgdata:
+      - "3000:3000"
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "4200:80"
+    depends_on:
+      backend:
+        condition: service_healthy

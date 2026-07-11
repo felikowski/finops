@@ -4,7 +4,10 @@
   "private": true,
   "scripts": {
     "db": "docker compose up -d",
-    "start": "concurrently \"pnpm --filter backend start:dev\" \"pnpm --filter frontend start\""
+    "start": "concurrently \"pnpm --filter backend start:dev:remote\" \"pnpm --filter frontend start\"",
+    "docker:build": "docker compose build",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down"
   },
   "devDependencies": {
     "concurrently": "^9.0.0"

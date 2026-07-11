@@ -1,17 +1,23 @@
 import { Controller, Get } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AppService } from './app.service';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private readonly config: ConfigService,
+  ) {}
 
   @Get()
   getHello(): string {
     return this.appService.getHello();
   }
 
-  @Get('health')
-  getHealth(): { status: 'ok'; service: string; checkedAt: string } {
-    return this.appService.getHealth();
+  @Get('config.json')
+  getRuntimeConfig(): { apiBaseUrl: string } {
+    return {
+      apiBaseUrl: this.config.get('PUBLIC_API_BASE_URL', '/api'),
+    };
   }
 }
