@@ -23,3 +23,16 @@ export interface BillingAccount {
 export interface PullResult {
   rowsInserted: number;
 }
+
+export type PullOutcomeStatus = 'success' | 'error';
+
+export interface BillingAccountPull {
+  id: string;
+  billingAccountId: string;
+  startedAt: string;
+  finishedAt: string;
+  status: PullOutcomeStatus;
+  rowsInserted: number | null;
+  errorMessage: string | null;
+  createdAt: string;
+}

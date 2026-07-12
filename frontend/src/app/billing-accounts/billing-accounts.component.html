@@ -42,8 +42,14 @@
                     </span>
                   </td>
                   <td>
-                    @if (account.lastIngestedAt) {
-                      {{ account.lastIngestedAt | date: 'medium' }} · {{ account.lastRowsInserted }} rows
+                    @if (lastPull(account.id); as last) {
+                      @if (last.status === 'error') {
+                        <span class="pull-result error">
+                          Failed {{ last.finishedAt | date: 'medium' }} — {{ last.errorMessage }}
+                        </span>
+                      } @else {
+                        {{ last.finishedAt | date: 'medium' }} · {{ last.rowsInserted }} rows
+                      }
                     } @else {
                       Never
                     }
