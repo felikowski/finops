@@ -2,10 +2,48 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { parse } from 'csv-parse';
+import { createHash } from 'crypto';
 import { BillingLineItem } from './entities/billing-line-item.entity';
 import { S3Adapter, S3GetStreamParams } from './adapters/s3.adapter';
 
 const BATCH_SIZE = 1000;
+
+// The dimensions that identify *what* is being charged. Two rows with the
+// same values across these columns are the same line item — a re-pull is
+// expected to upsert the value columns below (costs, quantities, ...) onto
+// it rather than insert a duplicate.
+const KEY_FIELDS: (keyof BillingLineItem)[] = [
+  'provider',
+  'billingAccountId',
+  'subAccountId',
+  'billingCurrency',
+  'billingPeriodStart',
+  'billingPeriodEnd',
+  'chargePeriodStart',
+  'chargePeriodEnd',
+  'chargeCategory',
+  'chargeClass',
+  'chargeDescription',
+  'chargeFrequency',
+  'pricingCategory',
+  'pricingCurrency',
+  'pricingUnit',
+  'consumedUnit',
+  'resourceId',
+  'resourceType',
+  'regionId',
+  'availabilityZone',
+  'serviceCategory',
+  'serviceName',
+  'serviceSubcategory',
+  'skuId',
+  'skuMeter',
+  'skuPriceId',
+  'commitmentDiscountId',
+  'commitmentDiscountType',
+  'capacityReservationId',
+  'invoiceId',
+];
 
 @Injectable()
 export class BillingService {
@@ -29,23 +67,40 @@ export class BillingService {
     let totalRows = 0;
 
     for await (const record of parser) {
-      batch.push(this.mapRecord(record));
+      const mapped = this.mapRecord(record);
+      const insertedAt = new Date();
+      batch.push({
+        ...mapped,
+        lineItemKey: this.computeLineItemKey(mapped),
+        insertedAt,
+      });
 
       if (batch.length >= BATCH_SIZE) {
-        await this.repo.insert(batch);
+        await this.repo.upsert(batch, { conflictPaths: ['lineItemKey'] });
         totalRows += batch.length;
-        this.logger.log(`Inserted ${totalRows} rows...`);
+        this.logger.log(`Upserted ${totalRows} rows...`);
         batch = [];
       }
     }
 
     if (batch.length > 0) {
-      await this.repo.insert(batch);
+      await this.repo.upsert(batch, { conflictPaths: ['lineItemKey'] });
       totalRows += batch.length;
     }
 
-    this.logger.log(`Ingestion complete. Total rows inserted: ${totalRows}`);
+    this.logger.log(`Ingestion complete. Total rows processed: ${totalRows}`);
     return { rowsInserted: totalRows };
+  }
+
+  private computeLineItemKey(mapped: Partial<BillingLineItem>): string {
+    const parts = KEY_FIELDS.map((field) => this.normalizeKeyPart(mapped[field]));
+    return createHash('sha256').update(JSON.stringify(parts)).digest('hex');
+  }
+
+  private normalizeKeyPart(value: unknown): string {
+    if (value === null || value === undefined) return '';
+    if (value instanceof Date) return value.toISOString();
+    return String(value);
   }
 
   private val(record: Record<string, any>, ...keys: string[]): any {

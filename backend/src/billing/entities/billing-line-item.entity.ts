@@ -181,6 +181,21 @@ export class BillingLineItem {
   @Column({ type: 'jsonb', nullable: true })
   tags!: Record<string, string> | null;
 
+  // ─── Deduplication ────────────────────────────────────────────────────────
+
+  // sha256 over the semantic key columns (see BillingService.KEY_FIELDS) —
+  // the dimensions that identify *what* is being charged (account, resource,
+  // sku, region, charge period, ...), as opposed to the value columns
+  // (costs, quantities, ...) that a re-pull is allowed to correct in place.
+  // Hashed into one NOT NULL column because most key dimensions are
+  // nullable, and Postgres unique constraints treat NULL as distinct from
+  // NULL, so a raw composite unique index over them wouldn't dedupe.
+  @Column({ type: 'varchar', unique: true })
+  lineItemKey!: string;
+
+  @Column({ type: 'timestamp' })
+  insertedAt!: Date;
+
   // ─── Audit ────────────────────────────────────────────────────────────────
 
   @CreateDateColumn()

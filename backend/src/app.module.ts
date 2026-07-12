@@ -21,7 +21,9 @@ import { HealthModule } from './health/health.module';
         database: config.get('DB_NAME', 'finops'),
         schema: config.get('DB_SCHEMA', 'finops'),
         autoLoadEntities: true,
-        synchronize: true
+        synchronize: false,
+        migrations: [__dirname + '/migrations/*{.ts,.js}'],
+        migrationsRun: true,
       })
     }),
     BillingModule,
