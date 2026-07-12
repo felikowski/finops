@@ -56,6 +56,17 @@ which only reads plain env vars — it doesn't support `SECRETS_SOURCE=infisical
 migrations against a local Postgres, commit the result, then apply it anywhere with
 `migration:run` / `migration:run:remote`.
 
+## Dev fixture data
+
+`pnpm --filter backend seed:dev` (or `seed:dev:remote` for a Infisical-backed DB) inserts a single
+`billing_accounts` fixture row, so you can exercise the accounts list / pull UI without
+registering a real account by hand first. It's idempotent — running it again is a no-op if the
+fixture already exists.
+
+**Dev/local only.** Unlike migrations, this is never run automatically. Real billing accounts are
+tenant configuration entered through the app itself (`POST /billing-accounts`), not deploy-time
+fixtures — don't run this against prod.
+
 ## Continuous integration
 
 Every pull request and every push to `main` runs the [`Pull request checks`](.github/workflows/ci.yml)
