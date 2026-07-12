@@ -10,7 +10,13 @@
     "start": "node dist/main.js",
     "start:remote": "SECRETS_SOURCE=infisical node --env-file=.env dist/main.js",
     "start:dev": "ts-node src/main.ts",
-    "start:dev:remote": "SECRETS_SOURCE=infisical node --env-file=.env -r ts-node/register src/main.ts"
+    "start:dev:remote": "SECRETS_SOURCE=infisical node --env-file=.env -r ts-node/register src/main.ts",
+    "typeorm": "node --env-file=.env -r ts-node/register ./node_modules/typeorm/cli.js -d src/data-source.ts",
+    "migration:generate": "pnpm run typeorm migration:generate",
+    "migration:run": "node --env-file=.env -r ts-node/register src/migration-runner.ts run",
+    "migration:run:remote": "SECRETS_SOURCE=infisical node --env-file=.env -r ts-node/register src/migration-runner.ts run",
+    "migration:revert": "node --env-file=.env -r ts-node/register src/migration-runner.ts revert",
+    "migration:revert:remote": "SECRETS_SOURCE=infisical node --env-file=.env -r ts-node/register src/migration-runner.ts revert"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",
