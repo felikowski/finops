@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
 import { BillingModule } from './billing/billing.module';
 import { BillingAccountsModule } from './billing-accounts/billing-accounts.module';
 import { HealthModule } from './health/health.module';
@@ -26,6 +27,7 @@ import { HealthModule } from './health/health.module';
         migrationsRun: true,
       })
     }),
+    AuthModule,
     BillingModule,
     BillingAccountsModule,
     HealthModule,

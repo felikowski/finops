@@ -51,6 +51,8 @@ interface ManagedValue {
  *   that don't set their own `credential_ref` (billing_accounts registry,
  *   issue #16). Region is no longer fetched here — it's per-account config
  *   (`source_config.region`) resolved at pull time, not startup.
+ * - Auth0 tenant config (domain/client id/audience, issue #20) lives at
+ *   /auth0 — not role-specific, so flat like /postgres rather than nested.
  *
  * Only the INFISICAL_* bootstrap vars ("secret zero") remain outside Infisical.
  */
@@ -65,6 +67,10 @@ const MANAGED_ENV: ManagedValue[] = [
   { path: '/postgres/finops/finops_owner', key: 'password', envVar: 'DB_PASSWORD' },
   { path: '/aws/finops/billing-s3-reader', key: 'access_key_id', envVar: 'AWS_ACCESS_KEY_ID' },
   { path: '/aws/finops/billing-s3-reader', key: 'secret_access_key', envVar: 'AWS_SECRET_ACCESS_KEY' },
+  // Auth0 tenant config — not secret, but centralized here for consistency.
+  { path: '/auth0', key: 'domain', envVar: 'AUTH0_DOMAIN' },
+  { path: '/auth0', key: 'client_id', envVar: 'AUTH0_CLIENT_ID' },
+  { path: '/auth0', key: 'audience', envVar: 'AUTH0_AUDIENCE' },
 ];
 
 export async function loadRemoteSecrets(): Promise<void> {

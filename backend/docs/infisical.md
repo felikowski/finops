@@ -54,6 +54,11 @@ Create the following in **each environment** you run against (currently only `de
 /aws/finops/billing-s3-reader
 ├── access_key_id        →  AWS_ACCESS_KEY_ID
 └── secret_access_key    →  AWS_SECRET_ACCESS_KEY
+
+/auth0
+├── domain               →  AUTH0_DOMAIN
+├── client_id            →  AUTH0_CLIENT_ID
+└── audience             →  AUTH0_AUDIENCE
 ```
 
 Additionally, each `billing_accounts` row may set its own `credentialRef` pointing at a
@@ -80,6 +85,9 @@ using the same authenticated Infisical client as the startup fetch. See ADR-0007
   Since the `billing_accounts` registry (issue #16) landed, this is the **global fallback**
   identity, used only for accounts that don't set their own `credentialRef`. Region is no
   longer stored here — it's per-account (`source_config.region`).
+- **`/auth0`** — Auth0 tenant config for human login (issue #20): domain, SPA client id, and
+  API audience. Not secret (all three are visible in the JWT/login redirect anyway) but kept
+  here for one consistent config source across environments, same as `/postgres`.
 
 ## Machine-identity permissions
 

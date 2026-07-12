@@ -1,11 +1,19 @@
 import { InjectionToken } from '@angular/core';
 
+export interface AuthRuntimeConfig {
+  issuer: string;
+  clientId: string;
+  audience: string;
+}
+
 export interface RuntimeConfig {
   apiBaseUrl: string;
+  auth: AuthRuntimeConfig;
 }
 
 export const DEFAULT_RUNTIME_CONFIG: RuntimeConfig = {
   apiBaseUrl: 'http://localhost:3000',
+  auth: { issuer: '', clientId: '', audience: '' },
 };
 
 export const RUNTIME_CONFIG = new InjectionToken<RuntimeConfig>('runtime.config');

@@ -15,9 +15,18 @@ export class AppController {
   }
 
   @Get('config.json')
-  getRuntimeConfig(): { apiBaseUrl: string } {
+  getRuntimeConfig(): {
+    apiBaseUrl: string;
+    auth: { issuer: string; clientId: string; audience: string };
+  } {
+    const domain = this.config.get<string>('AUTH0_DOMAIN', '');
     return {
       apiBaseUrl: this.config.get('PUBLIC_API_BASE_URL', '/api'),
+      auth: {
+        issuer: domain ? `https://${domain}/` : '',
+        clientId: this.config.get('AUTH0_CLIENT_ID', ''),
+        audience: this.config.get('AUTH0_AUDIENCE', ''),
+      },
     };
   }
 }

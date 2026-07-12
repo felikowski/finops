@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { BillingAccountsService } from './billing-accounts.service';
 import { CreateBillingAccountDto } from './dto/create-billing-account.dto';
 import { BillingAccount } from './entities/billing-account.entity';
 import { BillingAccountPull } from './entities/billing-account-pull.entity';
 
+@UseGuards(JwtAuthGuard)
 @Controller('billing-accounts')
 export class BillingAccountsController {
   constructor(private readonly billingAccountsService: BillingAccountsService) {}
