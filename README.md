@@ -202,7 +202,7 @@ released tag, tracked in [#30](https://github.com/felikowski/finops/issues/30).
    Callback/Logout/Web Origins (alongside the existing `localhost:4200` entries) — without this,
    staging login fails even though the deploy itself succeeds.
 
-On the VPS, the stack expects `/etc/finops/dev/infisical.env` (the Infisical "secret zero"
+On the VPS, the stack expects `/etc/finops/staging/infisical.env` (the Infisical "secret zero"
 bootstrap file, `0600` root-owned — see [Authentication (Auth0)](#authentication-auth0) and
 `backend/docs/infisical.md`) to already exist outside `/docker/finops/`; it's provisioned by hand
 once and never touched by CI/CD.

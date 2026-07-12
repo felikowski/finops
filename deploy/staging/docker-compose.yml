@@ -3,7 +3,7 @@ services:
     image: ghcr.io/felikowski/finops-backend:main
     restart: unless-stopped
     env_file:
-      - /etc/finops/dev/infisical.env
+      - /etc/finops/staging/infisical.env
     environment:
       SECRETS_SOURCE: infisical
       PUBLIC_API_BASE_URL: /api
