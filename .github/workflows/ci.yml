@@ -51,7 +51,7 @@ jobs:
       - name: Validate docker compose config
         run: docker compose config
       - name: Prepare secret-zero file for staging compose validation
-        run: sudo mkdir -p /etc/finops/dev && sudo touch /etc/finops/dev/infisical.env
+        run: sudo mkdir -p /etc/finops/staging && sudo touch /etc/finops/staging/infisical.env
       - name: Validate staging docker compose config
         run: docker compose -f deploy/staging/docker-compose.yml config
       - uses: docker/setup-buildx-action@v3
