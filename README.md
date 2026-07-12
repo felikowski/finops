@@ -88,13 +88,16 @@ or at least their own Application/API):
 3. **APIs** → create an API (this becomes the `audience`), e.g. identifier `https://finops.api`.
    Signing algorithm RS256 (default).
 
-**Environment variables** (`backend/.env` locally; see `.env.example`):
+**Environment variables** (`backend/.env` locally, `SECRETS_SOURCE=local`; see `.env.example`):
 
 ```
 AUTH0_DOMAIN=your-tenant.eu.auth0.com   # no https://, no trailing slash
 AUTH0_CLIENT_ID=<the SPA application's Client ID>
 AUTH0_AUDIENCE=<the API identifier from step 3>
 ```
+
+With `SECRETS_SOURCE=infisical`, these come from Infisical instead — `domain`/`client_id`/
+`audience` at `/auth0` (see `backend/docs/infisical.md`), same pattern as the Postgres values.
 
 The frontend never reads these directly — it fetches them at runtime from the backend's
 `GET /config.json` (the same mechanism `apiBaseUrl` already uses), so there's nothing to bake

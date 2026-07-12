@@ -45,8 +45,9 @@ outweighs velocity later — see below for why that revisit wouldn't mean starti
   package. `JwtAuthGuard` (`AuthGuard('jwt')`) protects `BillingAccountsController`; nothing
   Auth0-specific appears outside `jwt.strategy.ts`'s two config reads (`AUTH0_DOMAIN`,
   `AUTH0_AUDIENCE`).
-- Connection config (`AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_AUDIENCE`) is plain env config,
-  not yet Infisical-managed (see below), documented in `backend/.env.example`.
+- Connection config (`AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_AUDIENCE`) is Infisical-managed
+  like the Postgres/AWS values (`/auth0` path, see `docs/infisical.md`), with a plain-env
+  fallback in `backend/.env.example` for `SECRETS_SOURCE=local`.
 
 This makes the login/JWT-validation *mechanics* swappable by configuration alone if the
 provider is revisited. It does **not** make a future migration free: user data lives in Auth0's
@@ -54,10 +55,6 @@ own store (`sub` values, invites) and Auth0-specific admin tooling (Actions/Rule
 carry over — that's an inherent cost of any IdP choice, not something abstraction avoids.
 
 **Deliberately not done yet:**
-- `AUTH0_DOMAIN`/`AUTH0_CLIENT_ID`/`AUTH0_AUDIENCE` are not in `secrets.bootstrap.ts`'s
-  `MANAGED_ENV` — adding them now would make `start:dev:remote`/`start:remote` fail at boot
-  against an Infisical instance that doesn't have them yet. Move them in once an Auth0 tenant
-  exists and its values are populated in Infisical, the same way the Postgres/AWS values are.
 - Authorization/roles beyond "is this a valid, authenticated user" — that's the tenant-mapping
   work in #8, layered on top of the identity this ADR establishes.
 
@@ -78,5 +75,4 @@ carry over — that's an inherent cost of any IdP choice, not something abstract
 
 **Follow-ups**
 - #8: map the authenticated user to a tenant; add role/authorization checks beyond "valid JWT".
-- Move `AUTH0_*` into Infisical's `MANAGED_ENV` once a real tenant is provisioned there.
 - Document deployed callback/logout/origin URLs per environment once #29/#30 exist.
