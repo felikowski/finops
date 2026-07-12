@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
+import { provideOAuthClient } from 'angular-oauth2-oidc';
 import { App } from './app';
 import { routes } from './app.routes';
 import { DEFAULT_RUNTIME_CONFIG, RUNTIME_CONFIG } from './runtime-config';
@@ -12,6 +13,7 @@ describe('App', () => {
       providers: [
         provideHttpClient(),
         provideRouter(routes),
+        provideOAuthClient(),
         { provide: RUNTIME_CONFIG, useValue: DEFAULT_RUNTIME_CONFIG },
       ],
     }).compileComponents();

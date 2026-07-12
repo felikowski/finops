@@ -1,4 +1,10 @@
 <header class="app-header">
   <h1>FinOps</h1>
+  @if (userEmail) {
+    <div class="app-header__user">
+      <span>{{ userEmail }}</span>
+      <button type="button" (click)="logout()">Logout</button>
+    </div>
+  }
 </header>
 <router-outlet />

@@ -67,6 +67,39 @@ fixture already exists.
 tenant configuration entered through the app itself (`POST /billing-accounts`), not deploy-time
 fixtures — don't run this against prod.
 
+## Authentication (Auth0)
+
+The app requires a logged-in user (issue #20) — the frontend redirects to login before showing
+the billing-accounts UI, and the backend rejects unauthenticated requests to `/billing-accounts`
+with 401. Both sides talk to the IdP through standard OIDC only (a generic OIDC client library
+on the frontend, JWT/JWKS validation on the backend) — no Auth0-specific SDK or package — so
+swapping the IdP later is a configuration change, not a rewrite. See
+[ADR-0010](docs/adr/0010-auth0-oidc-provider.md) for the provider decision and
+[issue #20](https://github.com/felikowski/finops/issues/20) for the full rationale/AC.
+
+**One-time Auth0 dashboard setup** (per environment — dev/staging/prod each get their own tenant
+or at least their own Application/API):
+
+1. Create an Auth0 tenant if you don't have one yet.
+2. **Application** → create a **Single Page Application**:
+   - Allowed Callback URLs: `http://localhost:4200` (add your deployed frontend origin later)
+   - Allowed Logout URLs: `http://localhost:4200`
+   - Allowed Web Origins: `http://localhost:4200`
+3. **APIs** → create an API (this becomes the `audience`), e.g. identifier `https://finops.api`.
+   Signing algorithm RS256 (default).
+
+**Environment variables** (`backend/.env` locally; see `.env.example`):
+
+```
+AUTH0_DOMAIN=your-tenant.eu.auth0.com   # no https://, no trailing slash
+AUTH0_CLIENT_ID=<the SPA application's Client ID>
+AUTH0_AUDIENCE=<the API identifier from step 3>
+```
+
+The frontend never reads these directly — it fetches them at runtime from the backend's
+`GET /config.json` (the same mechanism `apiBaseUrl` already uses), so there's nothing to bake
+into the frontend image at build time.
+
 ## Continuous integration
 
 Every pull request and every push to `main` runs the [`Pull request checks`](.github/workflows/ci.yml)
