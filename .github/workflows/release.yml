@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      sha: ${{ steps.resolve.outputs.sha }}
     steps:
       - name: Validate version format
         run: |
@@ -39,6 +41,9 @@ jobs:
             exit 1
           fi
 
+      - id: resolve
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Create and push tag
         run: |
           git config user.name "github-actions[bot]"
@@ -56,3 +61,20 @@ jobs:
           gh release create "v${{ inputs.version }}" \
             --title "v${{ inputs.version }}" \
             --generate-notes
+
+  promote:
+    name: Promote images for this release
+    needs: tag
+    permissions:
+      contents: read
+      packages: write
+    # A push made with the default GITHUB_TOKEN (the "Create and push tag"
+    # step above) does NOT trigger other workflows' `push` events — that's
+    # GitHub's built-in loop-prevention. promote-release.yml's own
+    # `push: tags:` trigger only fires for tags pushed some other way (e.g. a
+    # human with their own credentials). Calling it directly here is what
+    # makes the release we just tagged actually get promoted.
+    uses: ./.github/workflows/promote-release.yml
+    with:
+      ref_sha: ${{ needs.tag.outputs.sha }}
+      version: ${{ inputs.version }}
