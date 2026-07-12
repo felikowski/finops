@@ -3,6 +3,16 @@ name: Promote release images
 on:
   push:
     tags: ["v*"]
+  workflow_call:
+    inputs:
+      ref_sha:
+        description: "Commit SHA whose already-published sha- image to promote (defaults to the triggering commit)"
+        required: false
+        type: string
+      version:
+        description: "Plain semver being released, e.g. 1.4.0 (defaults to parsing it from the pushed tag)"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -36,18 +46,27 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract release tags
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ matrix.ghcr_repo }}
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+      # docker/metadata-action derives the version from the ref that triggered
+      # this *workflow run* — correct for a direct tag push, but wrong when
+      # called via workflow_call, where the ref is still the caller's (main).
+      # Build the tags directly from the version instead, so both paths agree.
+      - name: Determine release version
+        id: version
+        run: |
+          version="${{ inputs.version }}"
+          if [ -z "$version" ]; then
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::'$version' is not a plain semver (expected e.g. 1.4.0)"
+            exit 1
+          fi
+          echo "full=$version" >> "$GITHUB_OUTPUT"
+          echo "minor=$(echo "$version" | cut -d. -f1,2)" >> "$GITHUB_OUTPUT"
 
       - name: Verify the source image was already built from main
         env:
-          SOURCE: ${{ matrix.ghcr_repo }}:sha-${{ github.sha }}
+          SOURCE: ${{ matrix.ghcr_repo }}:sha-${{ inputs.ref_sha || github.sha }}
         run: |
           if ! docker buildx imagetools inspect "$SOURCE" >/dev/null 2>&1; then
             echo "::error::$SOURCE not found in GHCR — this tag's commit was never built and published from main, so there is nothing to promote."
@@ -56,11 +75,8 @@ jobs:
 
       - name: Promote existing image to release tags (no rebuild)
         env:
-          SOURCE: ${{ matrix.ghcr_repo }}:sha-${{ github.sha }}
+          SOURCE: ${{ matrix.ghcr_repo }}:sha-${{ inputs.ref_sha || github.sha }}
+          FULL_TAG: ${{ matrix.ghcr_repo }}:${{ steps.version.outputs.full }}
+          MINOR_TAG: ${{ matrix.ghcr_repo }}:${{ steps.version.outputs.minor }}
         run: |
-          tags="${{ steps.meta.outputs.tags }}"
-          args=()
-          while IFS= read -r tag; do
-            [ -n "$tag" ] && args+=(--tag "$tag")
-          done <<< "$tags"
-          docker buildx imagetools create "${args[@]}" "$SOURCE"
+          docker buildx imagetools create --tag "$FULL_TAG" --tag "$MINOR_TAG" "$SOURCE"
