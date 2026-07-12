@@ -1,0 +1,66 @@
+name: Promote release images
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  promote:
+    # push events never fire with a fork's write-scoped token against this
+    # repo's packages, but keep the guard explicit rather than implicit.
+    if: github.repository == 'felikowski/finops'
+    name: Promote ${{ matrix.image }} image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - image: backend
+            ghcr_repo: ghcr.io/felikowski/finops-backend
+          - image: frontend
+            ghcr_repo: ghcr.io/felikowski/finops-frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract release tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ matrix.ghcr_repo }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Verify the source image was already built from main
+        env:
+          SOURCE: ${{ matrix.ghcr_repo }}:sha-${{ github.sha }}
+        run: |
+          if ! docker buildx imagetools inspect "$SOURCE" >/dev/null 2>&1; then
+            echo "::error::$SOURCE not found in GHCR — this tag's commit was never built and published from main, so there is nothing to promote."
+            exit 1
+          fi
+
+      - name: Promote existing image to release tags (no rebuild)
+        env:
+          SOURCE: ${{ matrix.ghcr_repo }}:sha-${{ github.sha }}
+        run: |
+          tags="${{ steps.meta.outputs.tags }}"
+          args=()
+          while IFS= read -r tag; do
+            [ -n "$tag" ] && args+=(--tag "$tag")
+          done <<< "$tags"
+          docker buildx imagetools create "${args[@]}" "$SOURCE"

@@ -34,6 +34,7 @@ the old one (and update the old one's status), rather than editing history.
 | [0006](./0006-columnar-analytics-store.md) | Columnar analytics store for billing line items | Proposed |
 | [0007](./0007-per-account-runtime-credential-resolution.md) | Billing source registry with per-account, runtime-resolved credentials | Accepted |
 | [0008](./0008-typeorm-migrations-replace-synchronize.md) | TypeORM migrations replace `synchronize` | Accepted |
+| [0009](./0009-ghcr-image-publishing.md) | Publish container images to GHCR, built once on `main` and promoted for releases | Accepted |
 
 > ADRs 0001–0003 and 0005 were **backfilled on 2026-07-05** from decisions taken earlier in
 > the project; the dates in those files reflect when they were recorded, not necessarily
