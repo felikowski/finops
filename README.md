@@ -156,3 +156,53 @@ Both images are multi-arch (`linux/amd64`, `linux/arm64`) and ship an SBOM and b
 attestation, generated once at build time and attached to the image digest — release tags point
 at that same digest, so they carry the same SBOM/provenance without a second build. Old/
 unreferenced package versions are pruned per [#38](https://github.com/felikowski/finops/issues/38).
+
+## Deployment (staging)
+
+Every successful run of [`Publish container images`](.github/workflows/publish-images.yml) on
+`main` triggers [`Deploy to staging`](.github/workflows/deploy-staging.yml), which SSHes into the
+Hostinger VPS and runs:
+
+1. `scp` [`deploy/staging/docker-compose.yml`](deploy/staging/docker-compose.yml) to
+   `/docker/finops/docker-compose.yml` on the server — the compose file itself lives in this repo
+   and is synced on every deploy, so it can never drift from what's reviewed here. Only that one
+   file is touched, never the directory, so it can't affect anything else provisioned there by
+   hand (see point 2).
+2. `docker compose pull && docker compose up -d` against that file, which picks up the `main`
+   image tag just published.
+
+The staging stack references published images only (`image:`, never `build:` — the VPS never
+checks out application source) and is publicly reachable at
+`https://finops-staging.srv1115517.hstgr.cloud`, fronted by the shared Traefik instance on the
+VPS. The deploy job runs under the GitHub `staging`
+[Environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment),
+so the repo's Deployments tab always reflects what's currently live.
+
+Production deployment is out of scope here — it's a separate, manually-triggered promotion of a
+released tag, tracked in [#30](https://github.com/felikowski/finops/issues/30).
+
+**One-time setup** (not automated by the workflow):
+
+1. Create the `staging` Environment under **Settings → Environments**.
+2. Generate a dedicated CI-only keypair (do **not** reuse a personal debug key — smaller blast
+   radius if the GitHub secret is ever compromised) and authorize its public half on the VPS:
+   ```bash
+   ssh-keygen -t ed25519 -f ~/.ssh/finops_ci_deploy -N ""
+   # append the resulting .pub file's contents to
+   # root@<vps-host>:~/.ssh/authorized_keys
+   ```
+3. Set these three secrets on the `staging` Environment (run locally — the private key should
+   never be pasted into a chat or ticket):
+   ```bash
+   gh secret set STAGING_SSH_HOST --env staging --body <vps-host>
+   gh secret set STAGING_SSH_USER --env staging --body root
+   gh secret set STAGING_SSH_PRIVATE_KEY --env staging < ~/.ssh/finops_ci_deploy
+   ```
+4. Add `https://finops-staging.srv1115517.hstgr.cloud` to the Auth0 SPA application's Allowed
+   Callback/Logout/Web Origins (alongside the existing `localhost:4200` entries) — without this,
+   staging login fails even though the deploy itself succeeds.
+
+On the VPS, the stack expects `/etc/finops/dev/infisical.env` (the Infisical "secret zero"
+bootstrap file, `0600` root-owned — see [Authentication (Auth0)](#authentication-auth0) and
+`backend/docs/infisical.md`) to already exist outside `/docker/finops/`; it's provisioned by hand
+once and never touched by CI/CD.

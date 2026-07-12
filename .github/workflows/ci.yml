@@ -50,6 +50,10 @@ jobs:
         run: cp backend/.env.example backend/.env
       - name: Validate docker compose config
         run: docker compose config
+      - name: Prepare secret-zero file for staging compose validation
+        run: sudo mkdir -p /etc/finops/dev && sudo touch /etc/finops/dev/infisical.env
+      - name: Validate staging docker compose config
+        run: docker compose -f deploy/staging/docker-compose.yml config
       - uses: docker/setup-buildx-action@v3
       - name: Build backend image
         uses: docker/build-push-action@v6
