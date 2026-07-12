@@ -17,7 +17,7 @@ ever disagree, the code wins. Keep this doc in sync when you change that table.
   `process.env`. `ConfigService` then reads those values exactly as if they came from `.env`.
 
 Infisical is used as a **combined secret + config store**, so not every value below is
-strictly secret (e.g. `region` is plain config).
+strictly secret (e.g. `host`/`port`/`database`/`schema` are plain config).
 
 ## Bootstrap variables ("secret zero") — NOT stored in Infisical
 
@@ -53,9 +53,21 @@ Create the following in **each environment** you run against (currently only `de
 
 /aws/finops/billing-s3-reader
 ├── access_key_id        →  AWS_ACCESS_KEY_ID
-├── secret_access_key    →  AWS_SECRET_ACCESS_KEY
-└── region               →  AWS_REGION
+└── secret_access_key    →  AWS_SECRET_ACCESS_KEY
 ```
+
+Additionally, each `billing_accounts` row may set its own `credentialRef` pointing at a
+path with the same `access_key_id`/`secret_access_key` shape, e.g.:
+
+```
+/aws/finops/<account-name>-s3-reader
+├── access_key_id        →  fetched at pull time, not startup
+└── secret_access_key    →  fetched at pull time, not startup
+```
+
+These per-account paths are **not** part of `MANAGED_ENV` — they're resolved at runtime by
+`CredentialResolverService` (`src/billing-accounts/credential-resolver.service.ts`), TTL-cached,
+using the same authenticated Infisical client as the startup fetch. See ADR-0007.
 
 ### Notes on individual paths
 
@@ -65,8 +77,9 @@ Create the following in **each environment** you run against (currently only `de
   `synchronize: true` needs DDL rights. It will switch to `/postgres/finops/finops_app`
   (CRUD-only) once explicit migrations replace `synchronize` (issue #10).
 - **`/aws/finops/billing-s3-reader`** — read-only S3 credentials for billing ingestion.
-  This is a **stopgap**: once the `billing_accounts` registry lands (issue #16), AWS source
-  credentials + region move to per-account control-plane config and should be removed here.
+  Since the `billing_accounts` registry (issue #16) landed, this is the **global fallback**
+  identity, used only for accounts that don't set their own `credentialRef`. Region is no
+  longer stored here — it's per-account (`source_config.region`).
 
 ## Machine-identity permissions
 

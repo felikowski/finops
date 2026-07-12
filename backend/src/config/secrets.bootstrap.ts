@@ -1,4 +1,4 @@
-import { InfisicalSDK } from '@infisical/sdk';
+import { getInfisicalClient, requireEnv } from './infisical-client';
 
 /**
  * Loads managed configuration (secrets and non-secret config) before the Nest
@@ -17,7 +17,7 @@ import { InfisicalSDK } from '@infisical/sdk';
  * comes from Infisical.
  *
  * Note: Infisical is used here as a combined secret + config store, so not
- * every entry below is strictly a secret (e.g. AWS_REGION is plain config).
+ * every entry below is strictly a secret (e.g. DB_HOST is plain config).
  */
 
 /**
@@ -46,10 +46,11 @@ interface ManagedValue {
  *   "user"/"password". The app connects as finops_owner for now because
  *   synchronize:true needs DDL rights — switch to /postgres/finops/finops_app
  *   (CRUD-only) once migrations replace synchronize (issue #10).
- * - AWS billing-reader credentials + region live under /aws/finops/... This is
- *   a stopgap: once the billing_accounts registry (issue #16) lands, AWS
- *   source credentials and region move to per-account control-plane config and
- *   should be removed from here.
+ * - AWS billing-reader credentials live under /aws/finops/billing-s3-reader.
+ *   This is the *global fallback* identity, used only for billing accounts
+ *   that don't set their own `credential_ref` (billing_accounts registry,
+ *   issue #16). Region is no longer fetched here — it's per-account config
+ *   (`source_config.region`) resolved at pull time, not startup.
  *
  * Only the INFISICAL_* bootstrap vars ("secret zero") remain outside Infisical.
  */
@@ -64,7 +65,6 @@ const MANAGED_ENV: ManagedValue[] = [
   { path: '/postgres/finops/finops_owner', key: 'password', envVar: 'DB_PASSWORD' },
   { path: '/aws/finops/billing-s3-reader', key: 'access_key_id', envVar: 'AWS_ACCESS_KEY_ID' },
   { path: '/aws/finops/billing-s3-reader', key: 'secret_access_key', envVar: 'AWS_SECRET_ACCESS_KEY' },
-  { path: '/aws/finops/billing-s3-reader', key: 'region', envVar: 'AWS_REGION' },
 ];
 
 export async function loadRemoteSecrets(): Promise<void> {
@@ -73,21 +73,9 @@ export async function loadRemoteSecrets(): Promise<void> {
     return;
   }
 
-  const siteUrl = requireEnv('INFISICAL_SITE_URL');
   const projectId = requireEnv('INFISICAL_PROJECT_ID');
   const environment = requireEnv('INFISICAL_ENVIRONMENT');
-  const clientId = requireEnv('INFISICAL_CLIENT_ID');
-  const clientSecret = requireEnv('INFISICAL_CLIENT_SECRET');
-
-  const client = new InfisicalSDK({ siteUrl });
-  try {
-    await client.auth().universalAuth.login({ clientId, clientSecret });
-  } catch (err) {
-    throw new Error(
-      `[secrets] Infisical machine-identity login failed at ${siteUrl}: ` +
-        `${(err as Error).message}`,
-    );
-  }
+  const client = await getInfisicalClient();
 
   for (const { path, key, envVar } of MANAGED_ENV) {
     let value;
@@ -114,14 +102,4 @@ export async function loadRemoteSecrets(): Promise<void> {
       `(environment="${environment}"): ` +
       MANAGED_ENV.map((v) => `${v.path}:${v.key}→${v.envVar}`).join(', '),
   );
-}
-
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(
-      `[secrets] SECRETS_SOURCE=infisical requires ${name} to be set`,
-    );
-  }
-  return value;
 }
