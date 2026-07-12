@@ -13,6 +13,7 @@ import {
   AwsSourceConfig,
   SourceConfig,
 } from './entities/billing-account.entity';
+import { BillingAccountPull, PullStatus } from './entities/billing-account-pull.entity';
 import { CreateBillingAccountDto } from './dto/create-billing-account.dto';
 import { BillingService } from '../billing/billing.service';
 import { CredentialResolverService } from './credential-resolver.service';
@@ -22,6 +23,8 @@ export class BillingAccountsService {
   constructor(
     @InjectRepository(BillingAccount)
     private readonly repo: Repository<BillingAccount>,
+    @InjectRepository(BillingAccountPull)
+    private readonly pullRepo: Repository<BillingAccountPull>,
     private readonly billingService: BillingService,
     private readonly credentialResolver: CredentialResolverService,
   ) {}
@@ -55,8 +58,41 @@ export class BillingAccountsService {
     if (!account) {
       throw new NotFoundException(`billing account "${id}" not found`);
     }
+
+    const startedAt = new Date();
+    try {
+      const rowsInserted = await this.runPull(account);
+      await this.recordPull(account.id, startedAt, {
+        status: PullStatus.SUCCESS,
+        rowsInserted,
+        errorMessage: null,
+      });
+      return { rowsInserted };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'unknown error';
+      await this.recordPull(account.id, startedAt, {
+        status: PullStatus.ERROR,
+        rowsInserted: null,
+        errorMessage,
+      });
+      throw err;
+    }
+  }
+
+  async listPulls(id: string): Promise<BillingAccountPull[]> {
+    const account = await this.repo.findOneBy({ id });
+    if (!account) {
+      throw new NotFoundException(`billing account "${id}" not found`);
+    }
+    return this.pullRepo.find({
+      where: { billingAccountId: id },
+      order: { startedAt: 'DESC' },
+    });
+  }
+
+  private async runPull(account: BillingAccount): Promise<number> {
     if (!account.enabled) {
-      throw new ConflictException(`billing account "${id}" is disabled`);
+      throw new ConflictException(`billing account "${account.id}" is disabled`);
     }
     this.assertSupportedProvider(account.provider);
 
@@ -71,7 +107,7 @@ export class BillingAccountsService {
     } catch (err) {
       const reason = err instanceof Error ? err.message : 'unknown error';
       throw new BadGatewayException(
-        `Failed to resolve credentials for billing account "${id}": ${reason}`,
+        `Failed to resolve credentials for billing account "${account.id}": ${reason}`,
       );
     }
 
@@ -95,7 +131,21 @@ export class BillingAccountsService {
     account.lastRowsInserted = rowsInserted;
     await this.repo.save(account);
 
-    return { rowsInserted };
+    return rowsInserted;
+  }
+
+  private async recordPull(
+    billingAccountId: string,
+    startedAt: Date,
+    outcome: { status: PullStatus; rowsInserted: number | null; errorMessage: string | null },
+  ): Promise<void> {
+    const pull = this.pullRepo.create({
+      billingAccountId,
+      startedAt,
+      finishedAt: new Date(),
+      ...outcome,
+    });
+    await this.pullRepo.save(pull);
   }
 
   private assertSupportedProvider(provider: BillingProvider): void {
