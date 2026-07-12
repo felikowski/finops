@@ -80,3 +80,43 @@ checks under **Settings → Branches → Branch protection rules** for `main`:
 - `Backend build and unit tests`
 - `Frontend build and unit tests`
 - `Compose config and container image builds`
+
+## Container images
+
+Images are **built once on `main` and promoted, never rebuilt** for a release. Three workflows
+cover this:
+
+- [`Publish container images`](.github/workflows/publish-images.yml) — every push to `main`
+  builds both images and publishes them to GitHub Container Registry:
+  - `ghcr.io/felikowski/finops-backend`
+  - `ghcr.io/felikowski/finops-frontend`
+- [`Cut a release`](.github/workflows/release.yml) — manual (`workflow_dispatch`, under the
+  Actions tab). Give it a plain version like `1.4.0`; it tags `main`'s current tip as `v1.4.0`
+  and pushes the tag. Because it's a normal git tag on the mainline, it already covers every
+  commit merged before it — there's nothing else to "include".
+- [`Promote release images`](.github/workflows/promote-release.yml) — reacts to the `v*` tag
+  push above and copies the image already published for that commit's SHA to the release tags,
+  via `docker buildx imagetools create` (a manifest copy, not a rebuild). Fails loudly if that
+  commit's SHA was never built and published from `main` in the first place.
+
+Pull requests build the same images (see [Continuous integration](#continuous-integration)) but
+never push — publishing only happens on trusted `push`/tag events, so a fork's pull request can
+never publish a package.
+
+**Tags:**
+
+- `sha-<full commit sha>` — immutable, published for every build from `main`
+- `main` — always the latest build from the default branch
+- `latest` — alias for the latest default-branch build
+- `<semver>` / `<major>.<minor>` — published only by the release/promote flow above, pointing at
+  the exact same image bytes as that commit's `sha-` tag
+
+```bash
+docker pull ghcr.io/felikowski/finops-backend:latest
+docker run --rm -p 3000:3000 --env-file backend/.env ghcr.io/felikowski/finops-backend:latest
+```
+
+Both images are multi-arch (`linux/amd64`, `linux/arm64`) and ship an SBOM and build provenance
+attestation, generated once at build time and attached to the image digest — release tags point
+at that same digest, so they carry the same SBOM/provenance without a second build. Old/
+unreferenced package versions are pruned per [#38](https://github.com/felikowski/finops/issues/38).
