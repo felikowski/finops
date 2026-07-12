@@ -2,7 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { BillingAccountsService } from './billing-accounts.service';
-import { BillingAccount } from './billing-account.model';
+import { BillingAccount, BillingAccountPull } from './billing-account.model';
 
 type LoadState = 'loading' | 'loaded' | 'error';
 
@@ -24,6 +24,7 @@ export class BillingAccountsComponent implements OnInit {
   accounts = signal<BillingAccount[]>([]);
   loadState = signal<LoadState>('loading');
   pullStates = signal<Record<string, PullState>>({});
+  lastPulls = signal<Record<string, BillingAccountPull>>({});
 
   ngOnInit(): void {
     this.load();
@@ -35,6 +36,7 @@ export class BillingAccountsComponent implements OnInit {
       next: (accounts) => {
         this.accounts.set(accounts);
         this.loadState.set('loaded');
+        accounts.forEach((account) => this.loadLastPull(account.id));
       },
       error: () => this.loadState.set('error'),
     });
@@ -50,8 +52,13 @@ export class BillingAccountsComponent implements OnInit {
       error: (err: HttpErrorResponse) => {
         const message = err.error?.message ?? 'Pull failed.';
         this.setPullState(account.id, { status: 'error', message });
+        this.loadLastPull(account.id);
       },
     });
+  }
+
+  lastPull(accountId: string): BillingAccountPull | undefined {
+    return this.lastPulls()[accountId];
   }
 
   pullState(accountId: string): PullState {
@@ -64,5 +71,19 @@ export class BillingAccountsComponent implements OnInit {
 
   private setPullState(accountId: string, state: PullState): void {
     this.pullStates.update((states) => ({ ...states, [accountId]: state }));
+  }
+
+  private loadLastPull(accountId: string): void {
+    this.billingAccountsService.listPulls(accountId).subscribe({
+      next: (pulls) => {
+        if (pulls.length === 0) {
+          return;
+        }
+        this.lastPulls.update((state) => ({ ...state, [accountId]: pulls[0] }));
+      },
+      error: () => {
+        // Non-fatal — the "Last pull" column just falls back to "Never".
+      },
+    });
   }
 }

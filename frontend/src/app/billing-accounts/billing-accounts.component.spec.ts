@@ -45,6 +45,10 @@ describe('BillingAccountsComponent', () => {
     return httpMock.expectOne(`${DEFAULT_RUNTIME_CONFIG.apiBaseUrl}/billing-accounts`);
   }
 
+  function expectPullsRequest(accountId: string) {
+    return httpMock.expectOne(`${DEFAULT_RUNTIME_CONFIG.apiBaseUrl}/billing-accounts/${accountId}/pulls`);
+  }
+
   it('shows a loading message before the list resolves', () => {
     const fixture = TestBed.createComponent(BillingAccountsComponent);
     fixture.detectChanges();
@@ -57,12 +61,36 @@ describe('BillingAccountsComponent', () => {
     const fixture = TestBed.createComponent(BillingAccountsComponent);
     fixture.detectChanges();
     expectListRequest().flush([account]);
+    expectPullsRequest(account.id).flush([]);
     fixture.detectChanges();
 
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('Acme AWS');
     expect(text).toContain('acme-billing/focus/export.csv');
     expect(text).toContain('Never');
+  });
+
+  it('shows the last recorded pull failure even after a reload', () => {
+    const fixture = TestBed.createComponent(BillingAccountsComponent);
+    fixture.detectChanges();
+    expectListRequest().flush([account]);
+    expectPullsRequest(account.id).flush([
+      {
+        id: 'pull-1',
+        billingAccountId: account.id,
+        startedAt: '2026-07-13T00:00:00.000Z',
+        finishedAt: '2026-07-13T00:00:01.000Z',
+        status: 'error',
+        rowsInserted: null,
+        errorMessage: 'Failed to pull from s3://acme-billing/focus/export.csv: bucket not found',
+        createdAt: '2026-07-13T00:00:01.000Z',
+      },
+    ]);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain(
+      'Failed to pull from s3://acme-billing/focus/export.csv: bucket not found',
+    );
   });
 
   it('shows an empty state when there are no accounts', () => {
@@ -87,6 +115,7 @@ describe('BillingAccountsComponent', () => {
     const fixture = TestBed.createComponent(BillingAccountsComponent);
     fixture.detectChanges();
     expectListRequest().flush([account]);
+    expectPullsRequest(account.id).flush([]);
     fixture.detectChanges();
 
     fixture.componentInstance.pull(account);
@@ -97,6 +126,18 @@ describe('BillingAccountsComponent', () => {
       .flush({ rowsInserted: 42 });
 
     expectListRequest().flush([{ ...account, lastIngestedAt: '2026-07-12T00:00:00.000Z', lastRowsInserted: 42 }]);
+    expectPullsRequest(account.id).flush([
+      {
+        id: 'pull-2',
+        billingAccountId: account.id,
+        startedAt: '2026-07-12T00:00:00.000Z',
+        finishedAt: '2026-07-12T00:00:01.000Z',
+        status: 'success',
+        rowsInserted: 42,
+        errorMessage: null,
+        createdAt: '2026-07-12T00:00:01.000Z',
+      },
+    ]);
     fixture.detectChanges();
 
     expect(fixture.componentInstance.isPulling(account.id)).toBe(false);
@@ -107,6 +148,7 @@ describe('BillingAccountsComponent', () => {
     const fixture = TestBed.createComponent(BillingAccountsComponent);
     fixture.detectChanges();
     expectListRequest().flush([account]);
+    expectPullsRequest(account.id).flush([]);
     fixture.detectChanges();
 
     fixture.componentInstance.pull(account);
@@ -116,6 +158,18 @@ describe('BillingAccountsComponent', () => {
         { message: 'Failed to pull from s3://acme-billing/focus/export.csv: bucket not found' },
         { status: 502, statusText: 'Bad Gateway' },
       );
+    expectPullsRequest(account.id).flush([
+      {
+        id: 'pull-3',
+        billingAccountId: account.id,
+        startedAt: '2026-07-12T00:00:00.000Z',
+        finishedAt: '2026-07-12T00:00:01.000Z',
+        status: 'error',
+        rowsInserted: null,
+        errorMessage: 'Failed to pull from s3://acme-billing/focus/export.csv: bucket not found',
+        createdAt: '2026-07-12T00:00:01.000Z',
+      },
+    ]);
     fixture.detectChanges();
 
     expect(fixture.componentInstance.isPulling(account.id)).toBe(false);

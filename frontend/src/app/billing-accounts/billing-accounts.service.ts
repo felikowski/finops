@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { RUNTIME_CONFIG } from '../runtime-config';
-import { BillingAccount, PullResult } from './billing-account.model';
+import { BillingAccount, BillingAccountPull, PullResult } from './billing-account.model';
 
 @Injectable({ providedIn: 'root' })
 export class BillingAccountsService {
@@ -17,6 +17,12 @@ export class BillingAccountsService {
     return this.http.post<PullResult>(
       `${this.runtimeConfig.apiBaseUrl}/billing-accounts/${id}/pull`,
       {},
+    );
+  }
+
+  listPulls(id: string): Observable<BillingAccountPull[]> {
+    return this.http.get<BillingAccountPull[]>(
+      `${this.runtimeConfig.apiBaseUrl}/billing-accounts/${id}/pulls`,
     );
   }
 }
