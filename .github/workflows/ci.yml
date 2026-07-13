@@ -54,6 +54,10 @@ jobs:
         run: sudo mkdir -p /etc/finops/staging && sudo touch /etc/finops/staging/infisical.env
       - name: Validate staging docker compose config
         run: docker compose -f deploy/staging/docker-compose.yml config
+      - name: Prepare secret-zero file for prod compose validation
+        run: sudo mkdir -p /etc/finops/prod && sudo touch /etc/finops/prod/infisical.env
+      - name: Validate prod docker compose config
+        run: IMAGE_TAG=0.0.0-ci docker compose -f deploy/prod/docker-compose.yml config
       - uses: docker/setup-buildx-action@v3
       - name: Build backend image
         uses: docker/build-push-action@v6

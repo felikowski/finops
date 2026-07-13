@@ -178,8 +178,8 @@ VPS. The deploy job runs under the GitHub `staging`
 [Environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment),
 so the repo's Deployments tab always reflects what's currently live.
 
-Production deployment is out of scope here — it's a separate, manually-triggered promotion of a
-released tag, tracked in [#30](https://github.com/felikowski/finops/issues/30).
+Production deployment is a separate, manually-triggered promotion of a released version — see
+[Deployment (production)](#deployment-production).
 
 **One-time setup** (not automated by the workflow):
 
@@ -206,3 +206,50 @@ On the VPS, the stack expects `/etc/finops/staging/infisical.env` (the Infisical
 bootstrap file, `0600` root-owned — see [Authentication (Auth0)](#authentication-auth0) and
 `backend/docs/infisical.md`) to already exist outside `/docker/finops/`; it's provisioned by hand
 once and never touched by CI/CD.
+
+## Deployment (production)
+
+Unlike staging, prod is never deployed automatically. [`Promote release to
+production`](.github/workflows/deploy-prod.yml) is triggered by hand (`workflow_dispatch`, under
+the Actions tab) with the plain version of an already-cut release (e.g. `0.1.0` — see [Container
+images](#container-images) for how a version gets tagged in the first place). The workflow:
+
+1. Verifies both `ghcr.io/felikowski/finops-backend:<version>` and `finops-frontend:<version>`
+   actually exist in GHCR, failing loudly if that version was never released — this is what stops
+   an arbitrary commit or typo from reaching prod.
+2. `scp`s [`deploy/prod/docker-compose.yml`](deploy/prod/docker-compose.yml) to
+   `/docker/finops-prod/docker-compose.yml` on the VPS (only that one file, same drift-proofing
+   as staging).
+3. SSHes in and runs `docker compose pull && docker compose up -d` with `IMAGE_TAG=<version>`
+   exported, so the stack comes up pinned to that exact release — never `main`, never `latest`.
+
+The prod stack is publicly reachable at `https://finops.srv1115517.hstgr.cloud`, fronted by the
+same shared Traefik instance as staging, and runs as its own `docker compose` project
+(`/docker/finops-prod/`) alongside — not instead of — the staging stack on the same VPS. The
+deploy job runs under the GitHub `production`
+[Environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment).
+
+**One-time setup** (not automated by the workflow):
+
+1. Create the `production` Environment under **Settings → Environments**. Add at least one
+   required reviewer on it — this is what makes a prod promotion an actual manual gate rather
+   than just a differently-named automatic deploy.
+2. Generate a **second**, prod-only CI keypair (do not reuse the staging deploy key — smaller
+   blast radius per environment) and authorize its public half on the VPS:
+   ```bash
+   ssh-keygen -t ed25519 -f ~/.ssh/finops_ci_deploy_prod -N ""
+   # append the resulting .pub file's contents to
+   # root@<vps-host>:~/.ssh/authorized_keys
+   ```
+3. Set these three secrets on the `production` Environment:
+   ```bash
+   gh secret set PROD_SSH_HOST --env production --body <vps-host>
+   gh secret set PROD_SSH_USER --env production --body root
+   gh secret set PROD_SSH_PRIVATE_KEY --env production < ~/.ssh/finops_ci_deploy_prod
+   ```
+4. Add `https://finops.srv1115517.hstgr.cloud` to the Auth0 SPA application's Allowed
+   Callback/Logout/Web Origins.
+5. On the VPS, create `/etc/finops/prod/infisical.env` (the Infisical "secret zero" bootstrap
+   file, `0600` root-owned, same pattern as staging's — see
+   [Authentication (Auth0)](#authentication-auth0) and `backend/docs/infisical.md`) before the
+   first promotion; it's provisioned by hand and never touched by CI/CD.
