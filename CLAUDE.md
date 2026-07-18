@@ -57,3 +57,18 @@ Minimal NestJS app with TypeORM (SQLite). The app listens on port 3000.
 ### Frontend
 
 Angular app scaffolded with Angular CLI 21. Source lives in `frontend/src/`.
+
+## GitHub conventions
+
+Same bilingual convention `AGENTS.md` defines for Codex applies to Claude Code too (confirmed
+with the user 2026-07-18, not just a Codex-specific rule):
+
+- Write the body of every GitHub issue, and every issue/PR comment, in both English and German:
+  English first, then a horizontal rule, then a `## Deutsche Fassung` heading with the German
+  version.
+- End every such comment/issue with this disclosure:
+
+  > *This issue/comment was drafted and posted by Claude Code on behalf of the repository owner. / Dieses Issue/dieser Kommentar wurde von Claude Code im Auftrag des Repository-Inhabers verfasst und veröffentlicht.*
+
+- Commits and PR titles follow Conventional Commits (`type(scope): description`), per
+  `AGENTS.md` — already existing repo practice.
