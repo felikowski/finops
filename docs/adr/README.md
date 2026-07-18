@@ -31,7 +31,7 @@ the old one (and update the old one's status), rather than editing history.
 | [0003](./0003-infisical-as-secrets-manager.md) | Infisical (self-hosted) as the secrets manager | Accepted |
 | [0004](./0004-startup-config-fetch-via-explicit-map.md) | Fetch config/secrets at startup via an explicit map | Accepted |
 | [0005](./0005-elt-pushdown-defer-go-worker.md) | ELT push-down for billing ingestion; defer a Go worker | Accepted |
-| [0006](./0006-columnar-analytics-store.md) | Columnar analytics store for billing line items | Proposed |
+| [0006](./0006-columnar-analytics-store.md) | Columnar analytics store for billing line items | Accepted |
 | [0007](./0007-per-account-runtime-credential-resolution.md) | Billing source registry with per-account, runtime-resolved credentials | Accepted |
 | [0008](./0008-typeorm-migrations-replace-synchronize.md) | TypeORM migrations replace `synchronize` | Accepted |
 | [0009](./0009-ghcr-image-publishing.md) | Publish container images to GHCR, built once on `main` and promoted for releases | Accepted |
