@@ -17,6 +17,12 @@ interface DayBar extends CostByDay {
   heightPct: number;
 }
 
+interface CategoryGroup {
+  category: string;
+  totalCost: number;
+  providers: { provider: string; totalCost: number }[];
+}
+
 @Component({
   selector: 'app-reporting',
   imports: [DecimalPipe],
@@ -47,6 +53,22 @@ export class ReportingComponent implements OnInit {
     const days = this.costByDay();
     const max = Math.max(...days.map((d) => d.totalCost), 0);
     return days.map((d) => ({ ...d, heightPct: max > 0 ? (d.totalCost / max) * 100 : 0 }));
+  });
+
+  /** Rolls the flat (category, provider, cost) rows up into one row per category — so "Compute" isn't repeated once per provider — sorted by category total, then by provider cost within it. */
+  categoryGroups = computed<CategoryGroup[]>(() => {
+    const groups = new Map<string, CategoryGroup>();
+    for (const row of this.costByCategoryAndProvider()) {
+      const key = row.serviceCategory ?? '—';
+      let group = groups.get(key);
+      if (!group) {
+        group = { category: key, totalCost: 0, providers: [] };
+        groups.set(key, group);
+      }
+      group.totalCost += row.totalCost;
+      group.providers.push({ provider: row.provider, totalCost: row.totalCost });
+    }
+    return [...groups.values()].sort((a, b) => b.totalCost - a.totalCost);
   });
 
   ngOnInit(): void {

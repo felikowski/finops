@@ -94,7 +94,7 @@
 
       <div class="panel">
         <h3>Cost by category and provider</h3>
-        @if (costByCategoryAndProvider().length === 0) {
+        @if (categoryGroups().length === 0) {
           <p class="state-message">No billing data ingested yet.</p>
         } @else {
           <div class="table-wrap">
@@ -107,12 +107,18 @@
                 </tr>
               </thead>
               <tbody>
-                @for (row of costByCategoryAndProvider(); track row.serviceCategory + '|' + row.provider) {
-                  <tr>
-                    <td>{{ row.serviceCategory ?? '—' }}</td>
-                    <td>{{ row.provider }}</td>
-                    <td class="numeric">{{ row.totalCost | number: '1.2-2' }}</td>
+                @for (group of categoryGroups(); track group.category) {
+                  <tr class="category-row">
+                    <td colspan="2">{{ group.category }}</td>
+                    <td class="numeric">{{ group.totalCost | number: '1.2-2' }}</td>
                   </tr>
+                  @for (p of group.providers; track p.provider) {
+                    <tr class="provider-row">
+                      <td></td>
+                      <td>{{ p.provider }}</td>
+                      <td class="numeric">{{ p.totalCost | number: '1.2-2' }}</td>
+                    </tr>
+                  }
                 }
               </tbody>
             </table>
