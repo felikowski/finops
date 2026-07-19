@@ -58,4 +58,6 @@ re-open this ADR with real numbers before switching.
 **Follow-ups**
 - Production implementation tracked separately (see issue tracker) — dedicated catalog DB,
   IAM-scoped S3 bucket, `@duckdb/node-api` integration, ingestion push-down, snapshot cleanup.
+  The catalog DB + S3 bucket are provisioned; see the
+  [DuckLake catalog provisioning runbook](../runbooks/ducklake-catalog-provisioning.md).
 - Multi-tenant DuckLake catalog isolation tracked separately, extending issue #8.

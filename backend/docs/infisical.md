@@ -59,7 +59,26 @@ Create the following in **each environment** you run against (currently only `de
 ├── domain               →  AUTH0_DOMAIN
 ├── client_id            →  AUTH0_CLIENT_ID
 └── audience             →  AUTH0_AUDIENCE
+
+/postgres/ducklake
+└── database             →  (reserved — not yet an env var)
+
+/postgres/ducklake/ducklake_owner
+├── user                 →  (reserved)
+└── password             →  (reserved)
+
+/aws/finops/ducklake
+├── access_key_id        →  (reserved)
+├── secret_access_key    →  (reserved)
+├── bucket               →  (reserved)
+└── region               →  (reserved)
 ```
+
+> The four `/postgres/ducklake*` and `/aws/finops/ducklake` paths above are **provisioned but
+> not yet consumed by the backend** — `MANAGED_ENV` doesn't fetch them yet. They exist so the
+> DuckLake catalog DB (see [the provisioning runbook](../../docs/runbooks/ducklake-catalog-provisioning.md))
+> and S3 bucket have credentials on file before the `@duckdb/node-api` integration (issue #49's
+> next slice) wires them into `MANAGED_ENV`. Update this note once that lands.
 
 Additionally, each `billing_accounts` row may set its own `credentialRef` pointing at a
 path with the same `access_key_id`/`secret_access_key` shape, e.g.:
@@ -88,6 +107,15 @@ using the same authenticated Infisical client as the startup fetch. See ADR-0007
 - **`/auth0`** — Auth0 tenant config for human login (issue #20): domain, SPA client id, and
   API audience. Not secret (all three are visible in the JWT/login redirect anyway) but kept
   here for one consistent config source across environments, same as `/postgres`.
+- **`/postgres/ducklake`** / **`/postgres/ducklake/ducklake_owner`** — the DuckLake catalog
+  database (issue #49), a separate database on the **same** Postgres instance as `/postgres`
+  (host/port are shared — only `database`/`user`/`password` differ). One role, not an owner/app
+  split like `finops` — DuckLake's own `ATTACH ... (TYPE ducklake)` does catalog DDL on
+  essentially every write, so the least-privilege split doesn't map cleanly here.
+- **`/aws/finops/ducklake`** — credentials for the DuckLake Parquet data bucket
+  (`finops-ducklake`, `eu-central-1`), scoped to that one bucket only. Separate from
+  `/aws/finops/billing-s3-reader`, which is for reading *source* FOCUS exports, not DuckLake's
+  own storage.
 
 ## Machine-identity permissions
 
