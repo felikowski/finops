@@ -53,6 +53,10 @@ interface ManagedValue {
  *   (`source_config.region`) resolved at pull time, not startup.
  * - Auth0 tenant config (domain/client id/audience, issue #20) lives at
  *   /auth0 — not role-specific, so flat like /postgres rather than nested.
+ * - DuckLake catalog config (issue #49) lives at /postgres/ducklake(/ducklake_owner)
+ *   and /aws/finops/ducklake, injected into DUCKLAKE_-prefixed env vars kept
+ *   separate from the DB_ and AWS_ ones — see
+ *   docs/runbooks/ducklake-catalog-provisioning.md.
  *
  * Only the INFISICAL_* bootstrap vars ("secret zero") remain outside Infisical.
  */
@@ -71,6 +75,20 @@ const MANAGED_ENV: ManagedValue[] = [
   { path: '/auth0', key: 'domain', envVar: 'AUTH0_DOMAIN' },
   { path: '/auth0', key: 'client_id', envVar: 'AUTH0_CLIENT_ID' },
   { path: '/auth0', key: 'audience', envVar: 'AUTH0_AUDIENCE' },
+  // DuckLake catalog (issue #49) — deliberately separate DUCKLAKE_* env vars
+  // rather than reusing DB_*/AWS_*, so DuckLake-specific config doesn't mix
+  // with the TypeORM/billing-ingestion config. Host/port are the *same*
+  // Postgres instance as /postgres above (just re-read under a second env
+  // var name) — only database/role/bucket differ.
+  { path: '/postgres', key: 'host', envVar: 'DUCKLAKE_DB_HOST' },
+  { path: '/postgres', key: 'port', envVar: 'DUCKLAKE_DB_PORT' },
+  { path: '/postgres/ducklake', key: 'database', envVar: 'DUCKLAKE_DB_NAME' },
+  { path: '/postgres/ducklake/ducklake_owner', key: 'user', envVar: 'DUCKLAKE_DB_USER' },
+  { path: '/postgres/ducklake/ducklake_owner', key: 'password', envVar: 'DUCKLAKE_DB_PASSWORD' },
+  { path: '/aws/finops/ducklake', key: 'access_key_id', envVar: 'DUCKLAKE_AWS_ACCESS_KEY_ID' },
+  { path: '/aws/finops/ducklake', key: 'secret_access_key', envVar: 'DUCKLAKE_AWS_SECRET_ACCESS_KEY' },
+  { path: '/aws/finops/ducklake', key: 'bucket', envVar: 'DUCKLAKE_S3_BUCKET' },
+  { path: '/aws/finops/ducklake', key: 'region', envVar: 'DUCKLAKE_S3_REGION' },
 ];
 
 export async function loadRemoteSecrets(): Promise<void> {

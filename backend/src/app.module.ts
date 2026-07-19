@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { BillingModule } from './billing/billing.module';
 import { BillingAccountsModule } from './billing-accounts/billing-accounts.module';
+import { DuckLakeModule } from './ducklake/ducklake.module';
 import { HealthModule } from './health/health.module';
 
 @Module({
@@ -30,6 +31,7 @@ import { HealthModule } from './health/health.module';
     AuthModule,
     BillingModule,
     BillingAccountsModule,
+    DuckLakeModule,
     HealthModule,
   ],
   controllers: [AppController],
