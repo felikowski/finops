@@ -1,5 +1,9 @@
 <header class="app-header">
   <h1>FinOps</h1>
+  <nav class="app-header__nav">
+    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Reporting</a>
+    <a routerLink="/billing-accounts" routerLinkActive="active">Billing accounts</a>
+  </nav>
   @if (userEmail) {
     <div class="app-header__user">
       <span>{{ userEmail }}</span>

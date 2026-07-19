@@ -6,7 +6,7 @@ export interface BillingAccountSourceConfig {
 
 export interface BillingAccount {
   id: string;
-  tenantId: number;
+  customerId: string | null;
   provider: string;
   displayName: string;
   cloudAccountId: string | null;
