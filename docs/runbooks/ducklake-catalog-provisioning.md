@@ -96,3 +96,5 @@ long-lived on any local disk beyond the one-time handoff.
 - DuckLake snapshot/orphaned-file cleanup policy.
 - Repeating this for a second environment (staging/dev) — same steps, different
   bucket/role/Infisical-environment names.
+- Browsing the actual data with a SQL client — see
+  [the DBeaver setup runbook](./ducklake-dbeaver-setup.md).
