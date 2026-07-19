@@ -17,8 +17,11 @@ export class ReportingController {
   }
 
   @Get('cost-by-category-provider')
-  getCostByCategoryAndProvider(@CurrentCustomer() customer: Customer): Promise<CostByCategoryAndProvider[]> {
-    return this.reportingService.getCostByCategoryAndProvider(customer.id);
+  getCostByCategoryAndProvider(
+    @Query('month') month: string | undefined,
+    @CurrentCustomer() customer: Customer,
+  ): Promise<CostByCategoryAndProvider[]> {
+    return this.reportingService.getCostByCategoryAndProvider(customer.id, month);
   }
 
   @Get('cost-by-day')

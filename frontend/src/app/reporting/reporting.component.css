@@ -20,6 +20,12 @@ h3 {
   margin: 0 0 1rem;
 }
 
+.scope-hint {
+  font-weight: 400;
+  color: #555;
+  font-size: 0.9rem;
+}
+
 .panel {
   margin-bottom: 2rem;
 }

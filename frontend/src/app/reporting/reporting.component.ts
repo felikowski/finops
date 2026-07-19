@@ -33,8 +33,10 @@ export class ReportingComponent implements OnInit {
   private reportingService = inject(ReportingService);
 
   costByMonth = signal<CostByMonth[]>([]);
-  costByCategoryAndProvider = signal<CostByCategoryAndProvider[]>([]);
   loadState = signal<LoadState>('loading');
+
+  costByCategoryAndProvider = signal<CostByCategoryAndProvider[]>([]);
+  categoryLoadState = signal<LoadState>('loading');
 
   viewMode = signal<ViewMode>('monthly');
   selectedMonth = signal<string | null>(null);
@@ -77,43 +79,53 @@ export class ReportingComponent implements OnInit {
 
   load(): void {
     this.loadState.set('loading');
-    Promise.all([
-      firstValueFrom(this.reportingService.getCostByMonth()),
-      firstValueFrom(this.reportingService.getCostByCategoryAndProvider()),
-    ])
-      .then(([byMonth, byCategoryAndProvider]) => {
+    firstValueFrom(this.reportingService.getCostByMonth())
+      .then((byMonth) => {
         this.costByMonth.set(byMonth);
-        this.costByCategoryAndProvider.set(byCategoryAndProvider);
         this.loadState.set('loaded');
+        // Preserve the current mode across a manual Refresh — re-apply the
+        // active month scope instead of always resetting to the all-time total.
         if (this.viewMode() === 'daily') {
-          this.ensureSelectedMonth();
+          const month = this.resolveMonthOrLatest();
+          if (month) {
+            this.selectMonth(month);
+            return;
+          }
         }
+        this.loadCategoryAndProvider(undefined);
       })
       .catch(() => this.loadState.set('error'));
   }
 
   setViewMode(mode: ViewMode): void {
     this.viewMode.set(mode);
-    if (mode === 'daily') {
-      this.ensureSelectedMonth();
+    if (mode === 'monthly') {
+      this.loadCategoryAndProvider(undefined);
+      return;
+    }
+    const month = this.resolveMonthOrLatest();
+    if (month) {
+      this.selectMonth(month);
     }
   }
 
   onMonthChange(month: string): void {
-    this.selectedMonth.set(month);
-    this.loadDay(month);
+    this.selectMonth(month);
   }
 
-  private ensureSelectedMonth(): void {
-    if (this.selectedMonth() !== null) {
-      return;
+  private resolveMonthOrLatest(): string | null {
+    if (this.selectedMonth()) {
+      return this.selectedMonth();
     }
     const months = this.availableMonths();
-    const latest = months[months.length - 1] ?? null;
-    if (latest) {
-      this.selectedMonth.set(latest);
-      this.loadDay(latest);
-    }
+    return months[months.length - 1] ?? null;
+  }
+
+  /** Switches both the daily chart and the category/provider table to the given month, so the two panels always agree on what's being shown. */
+  private selectMonth(month: string): void {
+    this.selectedMonth.set(month);
+    this.loadDay(month);
+    this.loadCategoryAndProvider(month);
   }
 
   private loadDay(month: string): void {
@@ -124,5 +136,15 @@ export class ReportingComponent implements OnInit {
         this.dayLoadState.set('loaded');
       })
       .catch(() => this.dayLoadState.set('error'));
+  }
+
+  private loadCategoryAndProvider(month: string | undefined): void {
+    this.categoryLoadState.set('loading');
+    firstValueFrom(this.reportingService.getCostByCategoryAndProvider(month))
+      .then((data) => {
+        this.costByCategoryAndProvider.set(data);
+        this.categoryLoadState.set('loaded');
+      })
+      .catch(() => this.categoryLoadState.set('error'));
   }
 }

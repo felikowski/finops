@@ -93,36 +93,53 @@
       </div>
 
       <div class="panel">
-        <h3>Cost by category and provider</h3>
-        @if (categoryGroups().length === 0) {
-          <p class="state-message">No billing data ingested yet.</p>
-        } @else {
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Category</th>
-                  <th>Provider</th>
-                  <th class="numeric">Total cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (group of categoryGroups(); track group.category) {
-                  <tr class="category-row">
-                    <td colspan="2">{{ group.category }}</td>
-                    <td class="numeric">{{ group.totalCost | number: '1.2-2' }}</td>
-                  </tr>
-                  @for (p of group.providers; track p.provider) {
-                    <tr class="provider-row">
-                      <td></td>
-                      <td>{{ p.provider }}</td>
-                      <td class="numeric">{{ p.totalCost | number: '1.2-2' }}</td>
+        <h3>
+          Cost by category and provider
+          @if (viewMode() === 'daily' && selectedMonth()) {
+            <span class="scope-hint">— {{ selectedMonth() }}</span>
+          }
+        </h3>
+        @switch (categoryLoadState()) {
+          @case ('loading') {
+            <p class="state-message">Loading category data…</p>
+          }
+          @case ('error') {
+            <div class="state-message error">
+              <p>Failed to load category data.</p>
+            </div>
+          }
+          @case ('loaded') {
+            @if (categoryGroups().length === 0) {
+              <p class="state-message">No billing data ingested yet.</p>
+            } @else {
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Category</th>
+                      <th>Provider</th>
+                      <th class="numeric">Total cost</th>
                     </tr>
-                  }
-                }
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody>
+                    @for (group of categoryGroups(); track group.category) {
+                      <tr class="category-row">
+                        <td colspan="2">{{ group.category }}</td>
+                        <td class="numeric">{{ group.totalCost | number: '1.2-2' }}</td>
+                      </tr>
+                      @for (p of group.providers; track p.provider) {
+                        <tr class="provider-row">
+                          <td></td>
+                          <td>{{ p.provider }}</td>
+                          <td class="numeric">{{ p.totalCost | number: '1.2-2' }}</td>
+                        </tr>
+                      }
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          }
         }
       </div>
     }

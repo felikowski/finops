@@ -13,9 +13,10 @@ export class ReportingService {
     return this.http.get<CostByMonth[]>(`${this.runtimeConfig.apiBaseUrl}/reporting/cost-by-month`);
   }
 
-  getCostByCategoryAndProvider(): Observable<CostByCategoryAndProvider[]> {
+  getCostByCategoryAndProvider(month?: string): Observable<CostByCategoryAndProvider[]> {
     return this.http.get<CostByCategoryAndProvider[]>(
       `${this.runtimeConfig.apiBaseUrl}/reporting/cost-by-category-provider`,
+      { params: month ? new HttpParams().set('month', month) : undefined },
     );
   }
 

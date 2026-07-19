@@ -151,13 +151,20 @@ export class DuckLakeBillingRepository {
 
   /**
    * Total billed cost broken down by FOCUS service category and provider
-   * (issue #58), scoped the same way as getCostByMonth. Grouped by
-   * `serviceCategory` first — FOCUS's standardized taxonomy (e.g.
-   * "Compute", "Storage") — rather than the provider-specific `serviceName`
-   * ("Amazon Elastic Compute Cloud" vs. "Virtual Machines"), so spend is
-   * comparable across providers.
+   * (issue #58), scoped the same way as getCostByMonth and optionally
+   * further narrowed to a single calendar month (so it can follow the
+   * daily view's month selector). `month` must already be a validated
+   * "YYYY-MM" string (see ReportingService) — it's embedded directly in
+   * SQL, not passed as a bind parameter. Grouped by `serviceCategory` first
+   * — FOCUS's standardized taxonomy (e.g. "Compute", "Storage") — rather
+   * than the provider-specific `serviceName` ("Amazon Elastic Compute
+   * Cloud" vs. "Virtual Machines"), so spend is comparable across
+   * providers.
    */
-  async getCostByCategoryAndProvider(billingAccountIds: string[]): Promise<CostByCategoryAndProvider[]> {
+  async getCostByCategoryAndProvider(
+    billingAccountIds: string[],
+    month?: string,
+  ): Promise<CostByCategoryAndProvider[]> {
     if (billingAccountIds.length === 0) {
       return [];
     }
@@ -170,6 +177,7 @@ export class DuckLakeBillingRepository {
         CAST(SUM(${quoteIdent('billedCost')}) AS DOUBLE) AS "totalCost"
       FROM ${TABLE_NAME}
       WHERE ${quoteIdent(SOURCE_BILLING_ACCOUNT_ID_COLUMN)} IN (${this.idList(billingAccountIds)})
+        ${this.monthFilterSql(month)}
       GROUP BY "serviceCategory", provider
       ORDER BY "serviceCategory", "totalCost" DESC;
     `);
@@ -194,7 +202,7 @@ export class DuckLakeBillingRepository {
         CAST(SUM(${quoteIdent('billedCost')}) AS DOUBLE) AS "totalCost"
       FROM ${TABLE_NAME}
       WHERE ${quoteIdent(SOURCE_BILLING_ACCOUNT_ID_COLUMN)} IN (${this.idList(billingAccountIds)})
-        AND date_trunc('month', ${quoteIdent('chargePeriodStart')}) = strptime(${sqlLiteral(`${month}-01`)}, '%Y-%m-%d')
+        ${this.monthFilterSql(month)}
       GROUP BY day
       ORDER BY day;
     `);
@@ -203,6 +211,14 @@ export class DuckLakeBillingRepository {
 
   private idList(ids: string[]): string {
     return ids.map(sqlLiteral).join(', ');
+  }
+
+  /** An `AND ...` clause narrowing to a single calendar month, or '' if no month is given. `month` must already be a validated "YYYY-MM" string. */
+  private monthFilterSql(month: string | undefined): string {
+    if (!month) {
+      return '';
+    }
+    return `AND date_trunc('month', ${quoteIdent('chargePeriodStart')}) = strptime(${sqlLiteral(`${month}-01`)}, '%Y-%m-%d')`;
   }
 
   /** Runs CREATE/ALTER exactly once per process — repeating ALTER TABLE SET PARTITIONED BY on every call would churn out a new (identical) partition spec version each time. */

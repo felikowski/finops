@@ -21,17 +21,27 @@ export class ReportingService {
     return this.billingRepository.getCostByMonth(billingAccountIds);
   }
 
-  async getCostByCategoryAndProvider(customerId: string): Promise<CostByCategoryAndProvider[]> {
+  async getCostByCategoryAndProvider(
+    customerId: string,
+    month?: string,
+  ): Promise<CostByCategoryAndProvider[]> {
+    if (month !== undefined) {
+      this.assertValidMonth(month);
+    }
     const billingAccountIds = await this.billingAccountIdsFor(customerId);
-    return this.billingRepository.getCostByCategoryAndProvider(billingAccountIds);
+    return this.billingRepository.getCostByCategoryAndProvider(billingAccountIds, month);
   }
 
   async getCostByDay(customerId: string, month: string): Promise<CostByDay[]> {
+    this.assertValidMonth(month);
+    const billingAccountIds = await this.billingAccountIdsFor(customerId);
+    return this.billingRepository.getCostByDay(billingAccountIds, month);
+  }
+
+  private assertValidMonth(month: string): void {
     if (!MONTH_PATTERN.test(month)) {
       throw new BadRequestException('month must be in "YYYY-MM" format');
     }
-    const billingAccountIds = await this.billingAccountIdsFor(customerId);
-    return this.billingRepository.getCostByDay(billingAccountIds, month);
   }
 
   private async billingAccountIdsFor(customerId: string): Promise<string[]> {
