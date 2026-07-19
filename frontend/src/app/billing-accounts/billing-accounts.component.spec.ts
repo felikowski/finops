@@ -7,7 +7,7 @@ import { DEFAULT_RUNTIME_CONFIG, RUNTIME_CONFIG } from '../runtime-config';
 
 const account: BillingAccount = {
   id: 'acc-1',
-  tenantId: 1,
+  customerId: 'cust-1',
   provider: 'aws',
   displayName: 'Acme AWS',
   cloudAccountId: null,

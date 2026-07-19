@@ -4,7 +4,10 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { Customer } from '../../customers/entities/customer.entity';
 
 export enum BillingProvider {
   AWS = 'aws',
@@ -27,12 +30,16 @@ export class BillingAccount {
   id!: string;
 
   /**
-   * Placeholder until issue #8 (multi-tenant architecture) defines the real
-   * tenant model — not an FK yet, just a column so #8 won't need a migration
-   * under `synchronize`. Development uses tenant 1.
+   * Owning customer, resolved from the caller's Auth0 user on every request
+   * (see CustomersService) — nullable only because rows created before this
+   * scoping existed have no owner yet and need manual assignment.
    */
-  @Column({ type: 'integer', default: 1 })
-  tenantId!: number;
+  @Column({ type: 'uuid', nullable: true })
+  customerId!: string | null;
+
+  @ManyToOne(() => Customer, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'customerId' })
+  customer?: Customer;
 
   @Column({ type: 'enum', enum: BillingProvider, default: BillingProvider.AWS })
   provider!: BillingProvider;

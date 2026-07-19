@@ -1,0 +1,108 @@
+.reporting {
+  max-width: 960px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  font-family: system-ui, sans-serif;
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+h2 {
+  margin: 0;
+}
+
+h3 {
+  margin: 0 0 1rem;
+}
+
+.panel {
+  margin-bottom: 2rem;
+}
+
+.state-message {
+  color: #555;
+}
+
+.state-message.error {
+  color: #b00020;
+}
+
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  height: 220px;
+  padding: 0 0.5rem;
+  border-bottom: 1px solid #ddd;
+}
+
+.bar-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1;
+  height: 100%;
+}
+
+.bar {
+  width: 100%;
+  max-width: 48px;
+  min-height: 2px;
+  background: #3b6fd6;
+  border-radius: 3px 3px 0 0;
+}
+
+.bar-label {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: #555;
+}
+
+.bar-value {
+  font-size: 0.75rem;
+  color: #333;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  min-width: 480px;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #ddd;
+}
+
+th {
+  font-weight: 600;
+  color: #333;
+}
+
+.numeric {
+  text-align: right;
+}
+
+button {
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background: #fff;
+  border-radius: 4px;
+  padding: 0.35rem 0.9rem;
+}
+
+button.secondary {
+  background: #f7f7f7;
+}

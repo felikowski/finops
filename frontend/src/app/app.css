@@ -13,6 +13,22 @@
   font-size: 1.5rem;
 }
 
+.app-header__nav {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.app-header__nav a {
+  color: #555;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.app-header__nav a.active {
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
 .app-header__user {
   display: flex;
   align-items: center;

@@ -1,0 +1,64 @@
+<section class="reporting">
+  <div class="header-row">
+    <h2>Cost reporting</h2>
+    <button type="button" class="secondary" (click)="load()">Refresh</button>
+  </div>
+
+  @switch (loadState()) {
+    @case ('loading') {
+      <p class="state-message">Loading cost data…</p>
+    }
+    @case ('error') {
+      <div class="state-message error">
+        <p>Failed to load cost data.</p>
+        <button type="button" (click)="load()">Retry</button>
+      </div>
+    }
+    @case ('loaded') {
+      <div class="panel">
+        <h3>Total cost by month</h3>
+        @if (monthBars().length === 0) {
+          <p class="state-message">No billing data ingested yet.</p>
+        } @else {
+          <div class="bar-chart">
+            @for (bar of monthBars(); track bar.period) {
+              <div class="bar-column">
+                <div class="bar" [style.height.%]="bar.heightPct" [title]="bar.totalCost | number: '1.2-2'"></div>
+                <span class="bar-label">{{ bar.period }}</span>
+                <span class="bar-value">{{ bar.totalCost | number: '1.0-0' }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="panel">
+        <h3>Cost by provider and service</h3>
+        @if (costByProviderAndService().length === 0) {
+          <p class="state-message">No billing data ingested yet.</p>
+        } @else {
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Provider</th>
+                  <th>Service</th>
+                  <th class="numeric">Total cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of costByProviderAndService(); track row.provider + '|' + row.serviceName) {
+                  <tr>
+                    <td>{{ row.provider }}</td>
+                    <td>{{ row.serviceName ?? '—' }}</td>
+                    <td class="numeric">{{ row.totalCost | number: '1.2-2' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    }
+  }
+</section>

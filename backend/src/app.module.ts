@@ -8,6 +8,7 @@ import { BillingModule } from './billing/billing.module';
 import { BillingAccountsModule } from './billing-accounts/billing-accounts.module';
 import { DuckLakeModule } from './ducklake/ducklake.module';
 import { HealthModule } from './health/health.module';
+import { ReportingModule } from './reporting/reporting.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { HealthModule } from './health/health.module';
     BillingAccountsModule,
     DuckLakeModule,
     HealthModule,
+    ReportingModule,
   ],
   controllers: [AppController],
   providers: [AppService]

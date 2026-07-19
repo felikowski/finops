@@ -29,11 +29,11 @@ export class BillingAccountsService {
     private readonly credentialResolver: CredentialResolverService,
   ) {}
 
-  findAll(): Promise<BillingAccount[]> {
-    return this.repo.find();
+  findAll(customerId: string): Promise<BillingAccount[]> {
+    return this.repo.find({ where: { customerId } });
   }
 
-  create(dto: CreateBillingAccountDto): Promise<BillingAccount> {
+  create(dto: CreateBillingAccountDto, customerId: string): Promise<BillingAccount> {
     if (!dto.displayName) {
       throw new BadRequestException('displayName is required');
     }
@@ -49,12 +49,13 @@ export class BillingAccountsService {
       focusVersion: dto.focusVersion ?? '1.2',
       enabled: dto.enabled ?? true,
       cloudAccountId: dto.cloudAccountId ?? null,
+      customerId,
     });
     return this.repo.save(account);
   }
 
-  async pull(id: string): Promise<{ rowsInserted: number }> {
-    const account = await this.repo.findOneBy({ id });
+  async pull(id: string, customerId: string): Promise<{ rowsInserted: number }> {
+    const account = await this.repo.findOneBy({ id, customerId });
     if (!account) {
       throw new NotFoundException(`billing account "${id}" not found`);
     }
@@ -79,8 +80,8 @@ export class BillingAccountsService {
     }
   }
 
-  async listPulls(id: string): Promise<BillingAccountPull[]> {
-    const account = await this.repo.findOneBy({ id });
+  async listPulls(id: string, customerId: string): Promise<BillingAccountPull[]> {
+    const account = await this.repo.findOneBy({ id, customerId });
     if (!account) {
       throw new NotFoundException(`billing account "${id}" not found`);
     }

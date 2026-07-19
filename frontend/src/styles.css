@@ -1,1 +1,14 @@
 /* You can add global styles to this file, and also import other style files */
+
+/* Every component's palette is tuned for a light background only. color-scheme
+   alone isn't enough to stop some browsers' forced-dark heuristics from
+   painting an unset background dark, so the background is set explicitly too. */
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  background: #fff;
+  color: #1a1a1a;
+}
