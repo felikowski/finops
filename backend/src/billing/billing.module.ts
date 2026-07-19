@@ -1,12 +1,10 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { BillingLineItem } from './entities/billing-line-item.entity';
 import { BillingService } from './billing.service';
-import { S3Adapter } from './adapters/s3.adapter';
+import { DuckLakeModule } from '../ducklake/ducklake.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([BillingLineItem])],
-  providers: [BillingService, S3Adapter],
+  imports: [DuckLakeModule],
+  providers: [BillingService],
   exports: [BillingService],
 })
 export class BillingModule {}

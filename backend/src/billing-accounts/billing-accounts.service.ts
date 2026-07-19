@@ -114,6 +114,7 @@ export class BillingAccountsService {
     let rowsInserted: number;
     try {
       ({ rowsInserted } = await this.billingService.ingestFromS3({
+        billingAccountId: account.id,
         bucket,
         key,
         region,
