@@ -18,10 +18,13 @@
     "migration:revert": "node --env-file=.env -r ts-node/register src/migration-runner.ts revert",
     "migration:revert:remote": "SECRETS_SOURCE=infisical node --env-file=.env -r ts-node/register src/migration-runner.ts revert",
     "seed:dev": "node --env-file=.env -r ts-node/register src/seed-runner.ts",
-    "seed:dev:remote": "SECRETS_SOURCE=infisical node --env-file=.env -r ts-node/register src/seed-runner.ts"
+    "seed:dev:remote": "SECRETS_SOURCE=infisical node --env-file=.env -r ts-node/register src/seed-runner.ts",
+    "ducklake:verify": "node --env-file=.env -r ts-node/register src/ducklake-verify-runner.ts",
+    "ducklake:verify:remote": "SECRETS_SOURCE=infisical node --env-file=.env -r ts-node/register src/ducklake-verify-runner.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",
+    "@duckdb/node-api": "1.5.4-r.1",
     "@infisical/sdk": "^5.0.2",
     "@nestjs/common": "^10.3.0",
     "@nestjs/config": "^4.0.3",

@@ -61,24 +61,24 @@ Create the following in **each environment** you run against (currently only `de
 └── audience             →  AUTH0_AUDIENCE
 
 /postgres/ducklake
-└── database             →  (reserved — not yet an env var)
+└── database             →  DUCKLAKE_DB_NAME
 
 /postgres/ducklake/ducklake_owner
-├── user                 →  (reserved)
-└── password             →  (reserved)
+├── user                 →  DUCKLAKE_DB_USER
+└── password             →  DUCKLAKE_DB_PASSWORD
 
 /aws/finops/ducklake
-├── access_key_id        →  (reserved)
-├── secret_access_key    →  (reserved)
-├── bucket               →  (reserved)
-└── region               →  (reserved)
+├── access_key_id        →  DUCKLAKE_AWS_ACCESS_KEY_ID
+├── secret_access_key    →  DUCKLAKE_AWS_SECRET_ACCESS_KEY
+├── bucket               →  DUCKLAKE_S3_BUCKET
+└── region               →  DUCKLAKE_S3_REGION
 ```
 
-> The four `/postgres/ducklake*` and `/aws/finops/ducklake` paths above are **provisioned but
-> not yet consumed by the backend** — `MANAGED_ENV` doesn't fetch them yet. They exist so the
-> DuckLake catalog DB (see [the provisioning runbook](../../docs/runbooks/ducklake-catalog-provisioning.md))
-> and S3 bucket have credentials on file before the `@duckdb/node-api` integration (issue #49's
-> next slice) wires them into `MANAGED_ENV`. Update this note once that lands.
+> `/postgres`'s `host`/`port` are also re-injected as `DUCKLAKE_DB_HOST`/`DUCKLAKE_DB_PORT` (same
+> values, second env var name) — see the note on `/postgres/ducklake` below. The DuckLake catalog
+> was provisioned in issue #49's first slice
+> ([provisioning runbook](../../docs/runbooks/ducklake-catalog-provisioning.md)) and is now fully
+> wired into `MANAGED_ENV`, used by `src/ducklake/ducklake-connection.service.ts`.
 
 Additionally, each `billing_accounts` row may set its own `credentialRef` pointing at a
 path with the same `access_key_id`/`secret_access_key` shape, e.g.:
@@ -109,9 +109,11 @@ using the same authenticated Infisical client as the startup fetch. See ADR-0007
   here for one consistent config source across environments, same as `/postgres`.
 - **`/postgres/ducklake`** / **`/postgres/ducklake/ducklake_owner`** — the DuckLake catalog
   database (issue #49), a separate database on the **same** Postgres instance as `/postgres`
-  (host/port are shared — only `database`/`user`/`password` differ). One role, not an owner/app
-  split like `finops` — DuckLake's own `ATTACH ... (TYPE ducklake)` does catalog DDL on
-  essentially every write, so the least-privilege split doesn't map cleanly here.
+  (host/port are shared — re-read into `DUCKLAKE_DB_HOST`/`DUCKLAKE_DB_PORT`, deliberately
+  separate env vars from `DB_HOST`/`DB_PORT` so DuckLake config doesn't mix with the TypeORM
+  config). One role, not an owner/app split like `finops` — DuckLake's own
+  `ATTACH ... (TYPE ducklake)` does catalog DDL on essentially every write, so the
+  least-privilege split doesn't map cleanly here.
 - **`/aws/finops/ducklake`** — credentials for the DuckLake Parquet data bucket
   (`finops-ducklake`, `eu-central-1`), scoped to that one bucket only. Separate from
   `/aws/finops/billing-s3-reader`, which is for reading *source* FOCUS exports, not DuckLake's
