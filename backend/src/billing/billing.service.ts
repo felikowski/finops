@@ -1,190 +1,43 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { parse } from 'csv-parse';
-import { createHash } from 'crypto';
-import { BillingLineItem } from './entities/billing-line-item.entity';
-import { S3Adapter, S3GetStreamParams } from './adapters/s3.adapter';
+import { DuckLakeBillingRepository, UpsertFromCsvParams } from '../ducklake/ducklake-billing.repository';
 
-const BATCH_SIZE = 1000;
+export interface S3GetStreamParams {
+  billingAccountId: string;
+  bucket: string;
+  key: string;
+  region: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+}
 
-// The dimensions that identify *what* is being charged. Two rows with the
-// same values across these columns are the same line item — a re-pull is
-// expected to upsert the value columns below (costs, quantities, ...) onto
-// it rather than insert a duplicate.
-const KEY_FIELDS: (keyof BillingLineItem)[] = [
-  'provider',
-  'billingAccountId',
-  'subAccountId',
-  'billingCurrency',
-  'billingPeriodStart',
-  'billingPeriodEnd',
-  'chargePeriodStart',
-  'chargePeriodEnd',
-  'chargeCategory',
-  'chargeClass',
-  'chargeDescription',
-  'chargeFrequency',
-  'pricingCategory',
-  'pricingCurrency',
-  'pricingUnit',
-  'consumedUnit',
-  'resourceId',
-  'resourceType',
-  'regionId',
-  'availabilityZone',
-  'serviceCategory',
-  'serviceName',
-  'serviceSubcategory',
-  'skuId',
-  'skuMeter',
-  'skuPriceId',
-  'commitmentDiscountId',
-  'commitmentDiscountType',
-  'capacityReservationId',
-  'invoiceId',
-];
-
+/**
+ * Entry point `BillingAccountsService` calls to pull a FOCUS CSV — kept as a
+ * thin wrapper around `DuckLakeBillingRepository` so its calling convention
+ * (name, params shape, `{ rowsInserted }` return, throws on failure) stays
+ * stable and `billing-accounts.module.ts`/the controller/the frontend don't
+ * need to change. The actual push-down SQL lives in DuckLakeBillingRepository
+ * (issue #49) — this class holds no DuckLake- or Postgres-specific logic.
+ */
 @Injectable()
 export class BillingService {
   private readonly logger = new Logger(BillingService.name);
 
-  constructor(
-    @InjectRepository(BillingLineItem)
-    private readonly repo: Repository<BillingLineItem>,
-    private readonly s3Adapter: S3Adapter,
-  ) {}
+  constructor(private readonly duckLakeBillingRepository: DuckLakeBillingRepository) {}
 
   async ingestFromS3(params: S3GetStreamParams): Promise<{ rowsInserted: number }> {
     this.logger.log(`Starting ingestion from s3://${params.bucket}/${params.key}`);
 
-    const s3Stream = await this.s3Adapter.getStream(params);
-    const parser = s3Stream.pipe(
-      parse({ columns: true, cast: true, skip_empty_lines: true, trim: true }),
-    );
-
-    let batch: Partial<BillingLineItem>[] = [];
-    let totalRows = 0;
-
-    for await (const record of parser) {
-      const mapped = this.mapRecord(record);
-      const insertedAt = new Date();
-      batch.push({
-        ...mapped,
-        lineItemKey: this.computeLineItemKey(mapped),
-        insertedAt,
-      });
-
-      if (batch.length >= BATCH_SIZE) {
-        await this.repo.upsert(batch, { conflictPaths: ['lineItemKey'] });
-        totalRows += batch.length;
-        this.logger.log(`Upserted ${totalRows} rows...`);
-        batch = [];
-      }
-    }
-
-    if (batch.length > 0) {
-      await this.repo.upsert(batch, { conflictPaths: ['lineItemKey'] });
-      totalRows += batch.length;
-    }
-
-    this.logger.log(`Ingestion complete. Total rows processed: ${totalRows}`);
-    return { rowsInserted: totalRows };
-  }
-
-  private computeLineItemKey(mapped: Partial<BillingLineItem>): string {
-    const parts = KEY_FIELDS.map((field) => this.normalizeKeyPart(mapped[field]));
-    return createHash('sha256').update(JSON.stringify(parts)).digest('hex');
-  }
-
-  private normalizeKeyPart(value: unknown): string {
-    if (value === null || value === undefined) return '';
-    if (value instanceof Date) return value.toISOString();
-    return String(value);
-  }
-
-  private val(record: Record<string, any>, ...keys: string[]): any {
-    for (const key of keys) {
-      const v = record[key];
-      if (v !== undefined && v !== null && v !== 'NULL') return v;
-    }
-    return null;
-  }
-
-  private parseDate(record: Record<string, any>, ...keys: string[]): Date | undefined {
-    const v = this.val(record, ...keys);
-    return v ? new Date(v) : undefined;
-  }
-
-  private mapRecord(record: Record<string, any>): Partial<BillingLineItem> {
-    return {
-      // Mandatory — support both FOCUS 1.0 and 1.2 column names
-      billedCost: this.val(record, 'BilledCost'),
-      billingAccountId: this.val(record, 'BillingAccountId'),
-      billingAccountName: this.val(record, 'BillingAccountName'),
-      billingCurrency: this.val(record, 'BillingCurrency'),
-      billingPeriodEnd: this.parseDate(record, 'BillingPeriodEnd'),
-      billingPeriodStart: this.parseDate(record, 'BillingPeriodStart'),
-      chargeCategory: this.val(record, 'ChargeCategory'),
-      chargeClass: this.val(record, 'ChargeClass'),
-      chargeDescription: this.val(record, 'ChargeDescription'),
-      chargePeriodEnd: this.parseDate(record, 'ChargePeriodEnd'),
-      chargePeriodStart: this.parseDate(record, 'ChargePeriodStart'),
-      // FOCUS 1.0 used ProviderName, 1.2 uses Provider
-      provider: this.val(record, 'Provider', 'ProviderName'),
-
-      // Conditional
-      availabilityZone: this.val(record, 'AvailabilityZone'),
-      billingAccountType: this.val(record, 'BillingAccountType'),
-      capacityReservationId: this.val(record, 'CapacityReservationId'),
-      capacityReservationStatus: this.val(record, 'CapacityReservationStatus'),
-      chargeFrequency: this.val(record, 'ChargeFrequency'),
-      commitmentDiscountCategory: this.val(record, 'CommitmentDiscountCategory'),
-      commitmentDiscountId: this.val(record, 'CommitmentDiscountId'),
-      commitmentDiscountName: this.val(record, 'CommitmentDiscountName'),
-      commitmentDiscountQuantity: this.val(record, 'CommitmentDiscountQuantity'),
-      commitmentDiscountStatus: this.val(record, 'CommitmentDiscountStatus'),
-      commitmentDiscountType: this.val(record, 'CommitmentDiscountType'),
-      commitmentDiscountUnit: this.val(record, 'CommitmentDiscountUnit'),
-      consumedQuantity: this.val(record, 'ConsumedQuantity'),
-      consumedUnit: this.val(record, 'ConsumedUnit'),
-      contractedCost: this.val(record, 'ContractedCost'),
-      contractedUnitPrice: this.val(record, 'ContractedUnitPrice'),
-      effectiveCost: this.val(record, 'EffectiveCost'),
-      invoiceId: this.val(record, 'InvoiceId'),
-      // FOCUS 1.0 used InvoiceIssuerName, 1.2 uses InvoiceIssuer
-      invoiceIssuer: this.val(record, 'InvoiceIssuer', 'InvoiceIssuerName'),
-      listCost: this.val(record, 'ListCost'),
-      listUnitPrice: this.val(record, 'ListUnitPrice'),
-      pricingCategory: this.val(record, 'PricingCategory'),
-      pricingCurrency: this.val(record, 'PricingCurrency'),
-      pricingCurrencyContractedUnitPrice: this.val(record, 'PricingCurrencyContractedUnitPrice'),
-      pricingCurrencyEffectiveCost: this.val(record, 'PricingCurrencyEffectiveCost'),
-      pricingCurrencyListUnitPrice: this.val(record, 'PricingCurrencyListUnitPrice'),
-      pricingQuantity: this.val(record, 'PricingQuantity'),
-      pricingUnit: this.val(record, 'PricingUnit'),
-      // FOCUS 1.0 used PublisherName, 1.2 uses Publisher
-      publisher: this.val(record, 'Publisher', 'PublisherName'),
-      regionId: this.val(record, 'RegionId'),
-      regionName: this.val(record, 'RegionName'),
-      resourceId: this.val(record, 'ResourceId'),
-      resourceName: this.val(record, 'ResourceName'),
-      resourceType: this.val(record, 'ResourceType'),
-      serviceCategory: this.val(record, 'ServiceCategory'),
-      serviceName: this.val(record, 'ServiceName'),
-      serviceSubcategory: this.val(record, 'ServiceSubcategory'),
-      skuId: this.val(record, 'SkuId'),
-      skuMeter: this.val(record, 'SkuMeter'),
-      skuPriceDetails: this.val(record, 'SkuPriceDetails'),
-      skuPriceId: this.val(record, 'SkuPriceId'),
-      subAccountId: this.val(record, 'SubAccountId'),
-      subAccountName: this.val(record, 'SubAccountName'),
-      subAccountType: this.val(record, 'SubAccountType'),
-      tags: (() => {
-        const t = this.val(record, 'Tags');
-        if (!t) return null;
-        try { return JSON.parse(t); } catch { return null; }
-      })(),
+    const upsertParams: UpsertFromCsvParams = {
+      billingAccountId: params.billingAccountId,
+      sourceBucket: params.bucket,
+      sourceKey: params.key,
+      sourceRegion: params.region,
+      sourceAccessKeyId: params.accessKeyId,
+      sourceSecretAccessKey: params.secretAccessKey,
     };
+    const { rowsAffected } = await this.duckLakeBillingRepository.upsertFromCsv(upsertParams);
+
+    this.logger.log(`Ingestion complete. Rows affected: ${rowsAffected}`);
+    return { rowsInserted: rowsAffected };
   }
 }
