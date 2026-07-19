@@ -10,6 +10,8 @@ type ViewMode = 'monthly' | 'daily';
 interface MonthBar extends CostByMonth {
   /** Bar height as a percentage of the tallest month, for the CSS bar chart. */
   heightPct: number;
+  /** % change vs. the previous month in this series; null for the first month (nothing to compare against). */
+  changePct: number | null;
 }
 
 interface DayBar extends CostByDay {
@@ -48,7 +50,14 @@ export class ReportingComponent implements OnInit {
   monthBars = computed<MonthBar[]>(() => {
     const months = this.costByMonth();
     const max = Math.max(...months.map((m) => m.totalCost), 0);
-    return months.map((m) => ({ ...m, heightPct: max > 0 ? (m.totalCost / max) * 100 : 0 }));
+    return months.map((m, i) => {
+      const previous = months[i - 1];
+      const changePct =
+        previous && previous.totalCost !== 0
+          ? ((m.totalCost - previous.totalCost) / previous.totalCost) * 100
+          : null;
+      return { ...m, heightPct: max > 0 ? (m.totalCost / max) * 100 : 0, changePct };
+    });
   });
 
   dayBars = computed<DayBar[]>(() => {

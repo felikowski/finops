@@ -43,9 +43,21 @@
             <div class="bar-chart">
               @for (bar of monthBars(); track bar.period) {
                 <div class="bar-column">
-                  <div class="bar" [style.height.%]="bar.heightPct" [title]="bar.totalCost | number: '1.2-2'"></div>
+                  <div class="bar-track">
+                    <div class="bar" [style.height.%]="bar.heightPct" [title]="bar.totalCost | number: '1.2-2'"></div>
+                  </div>
                   <span class="bar-label">{{ bar.period }}</span>
                   <span class="bar-value">{{ bar.totalCost | number: '1.0-0' }}</span>
+                  @if (bar.changePct !== null) {
+                    <span
+                      class="bar-change"
+                      [class.increase]="bar.changePct > 0"
+                      [class.decrease]="bar.changePct < 0"
+                      [title]="'vs. previous month'"
+                    >
+                      {{ bar.changePct > 0 ? '+' : '' }}{{ bar.changePct | number: '1.0-1' }}%
+                    </span>
+                  }
                 </div>
               }
             </div>
@@ -79,7 +91,9 @@
                   <div class="bar-chart">
                     @for (bar of dayBars(); track bar.day) {
                       <div class="bar-column">
-                        <div class="bar" [style.height.%]="bar.heightPct" [title]="bar.totalCost | number: '1.2-2'"></div>
+                        <div class="bar-track">
+                          <div class="bar" [style.height.%]="bar.heightPct" [title]="bar.totalCost | number: '1.2-2'"></div>
+                        </div>
                         <span class="bar-label">{{ bar.day.slice(8) }}</span>
                         <span class="bar-value">{{ bar.totalCost | number: '1.0-0' }}</span>
                       </div>
