@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { RUNTIME_CONFIG } from '../runtime-config';
-import { CostByMonth, CostByProviderAndService } from './reporting.model';
+import { CostByDay, CostByMonth, CostByProviderAndService } from './reporting.model';
 
 @Injectable({ providedIn: 'root' })
 export class ReportingService {
@@ -17,5 +17,11 @@ export class ReportingService {
     return this.http.get<CostByProviderAndService[]>(
       `${this.runtimeConfig.apiBaseUrl}/reporting/cost-by-provider-service`,
     );
+  }
+
+  getCostByDay(month: string): Observable<CostByDay[]> {
+    return this.http.get<CostByDay[]>(`${this.runtimeConfig.apiBaseUrl}/reporting/cost-by-day`, {
+      params: new HttpParams().set('month', month),
+    });
   }
 }

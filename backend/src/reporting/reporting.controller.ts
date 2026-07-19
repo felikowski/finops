@@ -1,9 +1,9 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CustomerContextGuard } from '../customers/customer-context.guard';
 import { CurrentCustomer } from '../customers/current-customer.decorator';
 import { Customer } from '../customers/entities/customer.entity';
-import { CostByMonth, CostByProviderAndService } from '../ducklake/ducklake-billing.repository';
+import { CostByDay, CostByMonth, CostByProviderAndService } from '../ducklake/ducklake-billing.repository';
 import { ReportingService } from './reporting.service';
 
 @UseGuards(JwtAuthGuard, CustomerContextGuard)
@@ -19,5 +19,13 @@ export class ReportingController {
   @Get('cost-by-provider-service')
   getCostByProviderAndService(@CurrentCustomer() customer: Customer): Promise<CostByProviderAndService[]> {
     return this.reportingService.getCostByProviderAndService(customer.id);
+  }
+
+  @Get('cost-by-day')
+  getCostByDay(
+    @Query('month') month: string,
+    @CurrentCustomer() customer: Customer,
+  ): Promise<CostByDay[]> {
+    return this.reportingService.getCostByDay(customer.id, month);
   }
 }

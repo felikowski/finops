@@ -1,10 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import {
+  CostByDay,
   CostByMonth,
   CostByProviderAndService,
   DuckLakeBillingRepository,
 } from '../ducklake/ducklake-billing.repository';
 import { BillingAccountsService } from '../billing-accounts/billing-accounts.service';
+
+const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 @Injectable()
 export class ReportingService {
@@ -21,6 +24,14 @@ export class ReportingService {
   async getCostByProviderAndService(customerId: string): Promise<CostByProviderAndService[]> {
     const billingAccountIds = await this.billingAccountIdsFor(customerId);
     return this.billingRepository.getCostByProviderAndService(billingAccountIds);
+  }
+
+  async getCostByDay(customerId: string, month: string): Promise<CostByDay[]> {
+    if (!MONTH_PATTERN.test(month)) {
+      throw new BadRequestException('month must be in "YYYY-MM" format');
+    }
+    const billingAccountIds = await this.billingAccountIdsFor(customerId);
+    return this.billingRepository.getCostByDay(billingAccountIds, month);
   }
 
   private async billingAccountIdsFor(customerId: string): Promise<string[]> {

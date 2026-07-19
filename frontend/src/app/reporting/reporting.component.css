@@ -24,6 +24,46 @@ h3 {
   margin-bottom: 2rem;
 }
 
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.panel-header h3 {
+  margin: 0;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.view-toggle button.active {
+  background: #3b6fd6;
+  color: #fff;
+  border-color: #3b6fd6;
+}
+
+.month-select-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.month-select-row label {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.month-select-row select {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
 .state-message {
   color: #555;
 }
@@ -39,6 +79,7 @@ h3 {
   height: 220px;
   padding: 0 0.5rem;
   border-bottom: 1px solid #ddd;
+  overflow-x: auto;
 }
 
 .bar-column {
@@ -46,7 +87,8 @@ h3 {
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  flex: 1;
+  flex: 0 0 auto;
+  width: 52px;
   height: 100%;
 }
 

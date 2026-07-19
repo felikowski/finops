@@ -16,19 +16,79 @@
     }
     @case ('loaded') {
       <div class="panel">
-        <h3>Total cost by month</h3>
-        @if (monthBars().length === 0) {
-          <p class="state-message">No billing data ingested yet.</p>
-        } @else {
-          <div class="bar-chart">
-            @for (bar of monthBars(); track bar.period) {
-              <div class="bar-column">
-                <div class="bar" [style.height.%]="bar.heightPct" [title]="bar.totalCost | number: '1.2-2'"></div>
-                <span class="bar-label">{{ bar.period }}</span>
-                <span class="bar-value">{{ bar.totalCost | number: '1.0-0' }}</span>
-              </div>
-            }
+        <div class="panel-header">
+          <h3>Total cost by {{ viewMode() === 'daily' ? 'day' : 'month' }}</h3>
+          <div class="view-toggle">
+            <button
+              type="button"
+              [class.active]="viewMode() === 'monthly'"
+              (click)="setViewMode('monthly')"
+            >
+              Monthly
+            </button>
+            <button
+              type="button"
+              [class.active]="viewMode() === 'daily'"
+              (click)="setViewMode('daily')"
+            >
+              Daily
+            </button>
           </div>
+        </div>
+
+        @if (viewMode() === 'monthly') {
+          @if (monthBars().length === 0) {
+            <p class="state-message">No billing data ingested yet.</p>
+          } @else {
+            <div class="bar-chart">
+              @for (bar of monthBars(); track bar.period) {
+                <div class="bar-column">
+                  <div class="bar" [style.height.%]="bar.heightPct" [title]="bar.totalCost | number: '1.2-2'"></div>
+                  <span class="bar-label">{{ bar.period }}</span>
+                  <span class="bar-value">{{ bar.totalCost | number: '1.0-0' }}</span>
+                </div>
+              }
+            </div>
+          }
+        } @else {
+          @if (availableMonths().length === 0) {
+            <p class="state-message">No billing data ingested yet.</p>
+          } @else {
+            <div class="month-select-row">
+              <label for="daily-month">Month</label>
+              <select id="daily-month" (change)="onMonthChange($any($event.target).value)">
+                @for (m of availableMonths(); track m) {
+                  <option [value]="m" [selected]="m === selectedMonth()">{{ m }}</option>
+                }
+              </select>
+            </div>
+
+            @switch (dayLoadState()) {
+              @case ('loading') {
+                <p class="state-message">Loading daily cost data…</p>
+              }
+              @case ('error') {
+                <div class="state-message error">
+                  <p>Failed to load daily cost data.</p>
+                </div>
+              }
+              @case ('loaded') {
+                @if (dayBars().length === 0) {
+                  <p class="state-message">No billing data for this month.</p>
+                } @else {
+                  <div class="bar-chart">
+                    @for (bar of dayBars(); track bar.day) {
+                      <div class="bar-column">
+                        <div class="bar" [style.height.%]="bar.heightPct" [title]="bar.totalCost | number: '1.2-2'"></div>
+                        <span class="bar-label">{{ bar.day.slice(8) }}</span>
+                        <span class="bar-value">{{ bar.totalCost | number: '1.0-0' }}</span>
+                      </div>
+                    }
+                  </div>
+                }
+              }
+            }
+          }
         }
       </div>
 

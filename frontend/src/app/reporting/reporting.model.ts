@@ -8,3 +8,8 @@ export interface CostByProviderAndService {
   serviceName: string | null;
   totalCost: number;
 }
+
+export interface CostByDay {
+  day: string;
+  totalCost: number;
+}

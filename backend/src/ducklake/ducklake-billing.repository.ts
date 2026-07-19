@@ -24,6 +24,11 @@ export interface CostByProviderAndService {
   totalCost: number;
 }
 
+export interface CostByDay {
+  day: string;
+  totalCost: number;
+}
+
 export interface UpsertFromCsvParams {
   /** The owning billing_accounts.id — used both for the S3 secret name and stamped onto every row as sourceBillingAccountId. */
   billingAccountId: string;
@@ -162,6 +167,31 @@ export class DuckLakeBillingRepository {
       ORDER BY "totalCost" DESC;
     `);
     return reader.getRowObjects() as unknown as CostByProviderAndService[];
+  }
+
+  /**
+   * Total billed cost per day within a single calendar month (issue #58
+   * follow-up), scoped the same way as getCostByMonth. `month` must already
+   * be a validated "YYYY-MM" string (see ReportingService) — it's embedded
+   * directly in SQL here, not passed as a bind parameter.
+   */
+  async getCostByDay(billingAccountIds: string[], month: string): Promise<CostByDay[]> {
+    if (billingAccountIds.length === 0) {
+      return [];
+    }
+    await this.ensureSchema();
+    const connection = await this.connectionService.getConnection();
+    const reader = await connection.runAndReadAll(`
+      SELECT
+        strftime(date_trunc('day', ${quoteIdent('chargePeriodStart')}), '%Y-%m-%d') AS day,
+        CAST(SUM(${quoteIdent('billedCost')}) AS DOUBLE) AS "totalCost"
+      FROM ${TABLE_NAME}
+      WHERE ${quoteIdent(SOURCE_BILLING_ACCOUNT_ID_COLUMN)} IN (${this.idList(billingAccountIds)})
+        AND date_trunc('month', ${quoteIdent('chargePeriodStart')}) = strptime(${sqlLiteral(`${month}-01`)}, '%Y-%m-%d')
+      GROUP BY day
+      ORDER BY day;
+    `);
+    return reader.getRowObjects() as unknown as CostByDay[];
   }
 
   private idList(ids: string[]): string {
