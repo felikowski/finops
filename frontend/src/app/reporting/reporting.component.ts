@@ -2,7 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { ReportingService } from './reporting.service';
-import { CostByDay, CostByMonth, CostByProviderAndService } from './reporting.model';
+import { CostByCategoryAndProvider, CostByDay, CostByMonth } from './reporting.model';
 
 type LoadState = 'loading' | 'loaded' | 'error';
 type ViewMode = 'monthly' | 'daily';
@@ -27,7 +27,7 @@ export class ReportingComponent implements OnInit {
   private reportingService = inject(ReportingService);
 
   costByMonth = signal<CostByMonth[]>([]);
-  costByProviderAndService = signal<CostByProviderAndService[]>([]);
+  costByCategoryAndProvider = signal<CostByCategoryAndProvider[]>([]);
   loadState = signal<LoadState>('loading');
 
   viewMode = signal<ViewMode>('monthly');
@@ -57,11 +57,11 @@ export class ReportingComponent implements OnInit {
     this.loadState.set('loading');
     Promise.all([
       firstValueFrom(this.reportingService.getCostByMonth()),
-      firstValueFrom(this.reportingService.getCostByProviderAndService()),
+      firstValueFrom(this.reportingService.getCostByCategoryAndProvider()),
     ])
-      .then(([byMonth, byProviderAndService]) => {
+      .then(([byMonth, byCategoryAndProvider]) => {
         this.costByMonth.set(byMonth);
-        this.costByProviderAndService.set(byProviderAndService);
+        this.costByCategoryAndProvider.set(byCategoryAndProvider);
         this.loadState.set('loaded');
         if (this.viewMode() === 'daily') {
           this.ensureSelectedMonth();

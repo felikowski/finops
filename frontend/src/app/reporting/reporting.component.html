@@ -93,24 +93,24 @@
       </div>
 
       <div class="panel">
-        <h3>Cost by provider and service</h3>
-        @if (costByProviderAndService().length === 0) {
+        <h3>Cost by category and provider</h3>
+        @if (costByCategoryAndProvider().length === 0) {
           <p class="state-message">No billing data ingested yet.</p>
         } @else {
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
+                  <th>Category</th>
                   <th>Provider</th>
-                  <th>Service</th>
                   <th class="numeric">Total cost</th>
                 </tr>
               </thead>
               <tbody>
-                @for (row of costByProviderAndService(); track row.provider + '|' + row.serviceName) {
+                @for (row of costByCategoryAndProvider(); track row.serviceCategory + '|' + row.provider) {
                   <tr>
+                    <td>{{ row.serviceCategory ?? '—' }}</td>
                     <td>{{ row.provider }}</td>
-                    <td>{{ row.serviceName ?? '—' }}</td>
                     <td class="numeric">{{ row.totalCost | number: '1.2-2' }}</td>
                   </tr>
                 }

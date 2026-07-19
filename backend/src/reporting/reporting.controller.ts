@@ -3,7 +3,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CustomerContextGuard } from '../customers/customer-context.guard';
 import { CurrentCustomer } from '../customers/current-customer.decorator';
 import { Customer } from '../customers/entities/customer.entity';
-import { CostByDay, CostByMonth, CostByProviderAndService } from '../ducklake/ducklake-billing.repository';
+import { CostByCategoryAndProvider, CostByDay, CostByMonth } from '../ducklake/ducklake-billing.repository';
 import { ReportingService } from './reporting.service';
 
 @UseGuards(JwtAuthGuard, CustomerContextGuard)
@@ -16,9 +16,9 @@ export class ReportingController {
     return this.reportingService.getCostByMonth(customer.id);
   }
 
-  @Get('cost-by-provider-service')
-  getCostByProviderAndService(@CurrentCustomer() customer: Customer): Promise<CostByProviderAndService[]> {
-    return this.reportingService.getCostByProviderAndService(customer.id);
+  @Get('cost-by-category-provider')
+  getCostByCategoryAndProvider(@CurrentCustomer() customer: Customer): Promise<CostByCategoryAndProvider[]> {
+    return this.reportingService.getCostByCategoryAndProvider(customer.id);
   }
 
   @Get('cost-by-day')

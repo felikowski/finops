@@ -18,9 +18,9 @@ export interface CostByMonth {
   totalCost: number;
 }
 
-export interface CostByProviderAndService {
+export interface CostByCategoryAndProvider {
+  serviceCategory: string | null;
   provider: string;
-  serviceName: string | null;
   totalCost: number;
 }
 
@@ -149,8 +149,15 @@ export class DuckLakeBillingRepository {
     return reader.getRowObjects() as unknown as CostByMonth[];
   }
 
-  /** Total billed cost broken down by provider and service (issue #58), scoped the same way as getCostByMonth. */
-  async getCostByProviderAndService(billingAccountIds: string[]): Promise<CostByProviderAndService[]> {
+  /**
+   * Total billed cost broken down by FOCUS service category and provider
+   * (issue #58), scoped the same way as getCostByMonth. Grouped by
+   * `serviceCategory` first — FOCUS's standardized taxonomy (e.g.
+   * "Compute", "Storage") — rather than the provider-specific `serviceName`
+   * ("Amazon Elastic Compute Cloud" vs. "Virtual Machines"), so spend is
+   * comparable across providers.
+   */
+  async getCostByCategoryAndProvider(billingAccountIds: string[]): Promise<CostByCategoryAndProvider[]> {
     if (billingAccountIds.length === 0) {
       return [];
     }
@@ -158,15 +165,15 @@ export class DuckLakeBillingRepository {
     const connection = await this.connectionService.getConnection();
     const reader = await connection.runAndReadAll(`
       SELECT
+        ${quoteIdent('serviceCategory')} AS "serviceCategory",
         ${quoteIdent('provider')} AS provider,
-        ${quoteIdent('serviceName')} AS "serviceName",
         CAST(SUM(${quoteIdent('billedCost')}) AS DOUBLE) AS "totalCost"
       FROM ${TABLE_NAME}
       WHERE ${quoteIdent(SOURCE_BILLING_ACCOUNT_ID_COLUMN)} IN (${this.idList(billingAccountIds)})
-      GROUP BY provider, "serviceName"
-      ORDER BY "totalCost" DESC;
+      GROUP BY "serviceCategory", provider
+      ORDER BY "serviceCategory", "totalCost" DESC;
     `);
-    return reader.getRowObjects() as unknown as CostByProviderAndService[];
+    return reader.getRowObjects() as unknown as CostByCategoryAndProvider[];
   }
 
   /**

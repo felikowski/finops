@@ -1,8 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import {
+  CostByCategoryAndProvider,
   CostByDay,
   CostByMonth,
-  CostByProviderAndService,
   DuckLakeBillingRepository,
 } from '../ducklake/ducklake-billing.repository';
 import { BillingAccountsService } from '../billing-accounts/billing-accounts.service';
@@ -21,9 +21,9 @@ export class ReportingService {
     return this.billingRepository.getCostByMonth(billingAccountIds);
   }
 
-  async getCostByProviderAndService(customerId: string): Promise<CostByProviderAndService[]> {
+  async getCostByCategoryAndProvider(customerId: string): Promise<CostByCategoryAndProvider[]> {
     const billingAccountIds = await this.billingAccountIdsFor(customerId);
-    return this.billingRepository.getCostByProviderAndService(billingAccountIds);
+    return this.billingRepository.getCostByCategoryAndProvider(billingAccountIds);
   }
 
   async getCostByDay(customerId: string, month: string): Promise<CostByDay[]> {

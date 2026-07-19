@@ -3,9 +3,9 @@ export interface CostByMonth {
   totalCost: number;
 }
 
-export interface CostByProviderAndService {
+export interface CostByCategoryAndProvider {
+  serviceCategory: string | null;
   provider: string;
-  serviceName: string | null;
   totalCost: number;
 }
 
